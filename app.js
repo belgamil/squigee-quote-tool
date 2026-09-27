@@ -1,4 +1,7 @@
-const SIZES = ["XS", "S", "M", "L", "XL"];
+// Window sizes add up to the header total; extras are counted separately.
+const WINDOW_SIZES = ["XS", "S", "M", "L", "XL"];
+const EXTRAS = ["Screen", "Skylight"];
+const SIZES = [...WINDOW_SIZES, ...EXTRAS];
 const STORAGE_KEY = "squigee.windowCounts";
 
 // Counts are kept in localStorage so a page refresh in the field doesn't lose work.
@@ -29,7 +32,7 @@ const minusButtons = {};
 function render(size) {
   outputs[size].textContent = counts[size];
   minusButtons[size].disabled = counts[size] === 0;
-  totalEl.textContent = SIZES.reduce((sum, s) => sum + counts[s], 0);
+  totalEl.textContent = WINDOW_SIZES.reduce((sum, s) => sum + counts[s], 0);
 }
 
 function change(size, delta) {
@@ -43,12 +46,19 @@ for (const size of SIZES) {
   node.querySelector(".counter-label").textContent = size;
   const minus = node.querySelector(".minus");
   const plus = node.querySelector(".plus");
-  minus.setAttribute("aria-label", `Remove one ${size} window`);
-  plus.setAttribute("aria-label", `Add one ${size} window`);
+  const noun = EXTRAS.includes(size) ? size.toLowerCase() : `${size} window`;
+  minus.setAttribute("aria-label", `Remove one ${noun}`);
+  plus.setAttribute("aria-label", `Add one ${noun}`);
   minus.addEventListener("click", () => change(size, -1));
   plus.addEventListener("click", () => change(size, 1));
   outputs[size] = node.querySelector(".count");
   minusButtons[size] = minus;
+  if (size === EXTRAS[0]) {
+    const heading = document.createElement("h2");
+    heading.className = "section-heading";
+    heading.textContent = "Extras";
+    container.appendChild(heading);
+  }
   container.appendChild(node);
   render(size);
 }

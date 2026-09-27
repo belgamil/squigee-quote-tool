@@ -58,7 +58,16 @@ body {
 
 .counter-label { margin: 0; font-size: 1.4rem; font-weight: 700; min-width: 3ch; }
 
-.counter-controls { display: flex; align-items: center; gap: 12px; }
+.section-heading {
+  margin: 8px 0 -4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.counter-controls { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
 
 .count {
   min-width: 3ch;

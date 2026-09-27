@@ -4,8 +4,9 @@ Mobile-first web app for window washing crews to build price quotes in the field
 
 ## Current screen: Window Count
 
-Five size categories (XS, S, M, L, XL), each with large **−** / **+** buttons to
-adjust the count. A running total is shown at the top, counts are saved on the
+Five window sizes (XS, S, M, L, XL) plus extras (Screen, Skylight), each with
+large **−** / **+** buttons to adjust the count. The window total is shown at
+the top (screens and skylights are counted separately), counts are saved on the
 device (so a refresh doesn't lose them), and **Reset** clears everything.
 
 ## Running it
