@@ -64,8 +64,13 @@ for (const size of SIZES) {
 }
 
 document.getElementById("reset").addEventListener("click", () => {
-  if (!confirm("Reset all window counts to 0?")) return;
+  if (!confirm("Reset all counts to 0?")) return;
   for (const size of SIZES) counts[size] = 0;
   saveCounts();
   SIZES.forEach(render);
+});
+
+// Placeholder until the quote screen is built.
+document.getElementById("quote").addEventListener("click", () => {
+  alert("Quote screen coming soon.");
 });

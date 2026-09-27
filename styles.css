@@ -97,14 +97,28 @@ body {
 .btn.minus:active { background: #cfd7df; }
 .btn:disabled { opacity: 0.4; }
 
-.app-footer { padding: 16px 0; }
+.app-footer { display: flex; gap: 12px; padding: 16px 0; }
+
+.footer-btn {
+  flex: 1;
+  padding: 16px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-radius: 12px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
 
 .reset {
-  width: 100%;
-  padding: 14px;
-  font-size: 1rem;
-  border-radius: 12px;
   border: 1px solid var(--border);
   background: transparent;
   color: var(--muted);
 }
+
+.quote {
+  border: none;
+  background: var(--brand);
+  color: #fff;
+}
+
+.quote:active { background: var(--brand-dark); }
