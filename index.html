@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b6fb8">
+  <title>Squigee Quote – Window Count</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <h1>Window Count</h1>
+    <p class="total">Total: <span id="total">0</span></p>
+  </header>
+
+  <main id="counters" class="counters" aria-live="polite"></main>
+
+  <footer class="app-footer">
+    <button id="reset" class="reset" type="button">Reset</button>
+  </footer>
+
+  <template id="counter-template">
+    <section class="counter">
+      <h2 class="counter-label"></h2>
+      <div class="counter-controls">
+        <button class="btn minus" type="button">−</button>
+        <output class="count">0</output>
+        <button class="btn plus" type="button">+</button>
+      </div>
+    </section>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>

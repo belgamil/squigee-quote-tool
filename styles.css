@@ -1,0 +1,101 @@
+:root {
+  --brand: #0b6fb8;
+  --brand-dark: #08568f;
+  --bg: #f3f6f9;
+  --card: #ffffff;
+  --text: #1c2733;
+  --muted: #5d6b78;
+  --border: #d9e1e8;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom);
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.app-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 16px 0 8px;
+}
+
+.app-header h1 { margin: 0; font-size: 1.5rem; }
+.total { margin: 0; font-size: 1.1rem; color: var(--muted); }
+.total span { color: var(--text); font-weight: 700; }
+
+.counters {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+
+.counter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px 16px;
+}
+
+.counter-label { margin: 0; font-size: 1.4rem; font-weight: 700; min-width: 3ch; }
+
+.counter-controls { display: flex; align-items: center; gap: 12px; }
+
+.count {
+  min-width: 3ch;
+  text-align: center;
+  font-size: 1.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Big touch targets for use in the field (gloves, wet hands, sunlight). */
+.btn {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: none;
+  font-size: 2rem;
+  line-height: 1;
+  color: #fff;
+  background: var(--brand);
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.btn:active { background: var(--brand-dark); transform: scale(0.95); }
+.btn.minus { background: #e4e9ee; color: var(--text); }
+.btn.minus:active { background: #cfd7df; }
+.btn:disabled { opacity: 0.4; }
+
+.app-footer { padding: 16px 0; }
+
+.reset {
+  width: 100%;
+  padding: 14px;
+  font-size: 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+}
