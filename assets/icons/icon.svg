@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- App icon: the orange squeegee from the Squeegee Squad logo on the logo's blue. -->
+  <rect width="512" height="512" fill="#1048e0"/>
+  <g transform="translate(0 -38)">
+  <g fill="#fc5c00">
+    <!-- blade -->
+    <rect x="64" y="150" width="384" height="40" rx="14"/>
+    <!-- holder tapering into the handle -->
+    <path d="M168 186 H344 C336 214 318 232 300 246 C290 254 286 266 286 282 V404 C286 424 272 438 256 438 C240 438 226 424 226 404 V282 C226 266 222 254 212 246 C194 232 176 214 168 186 Z"/>
+  </g>
+  <!-- blade highlight and rivets -->
+  <rect x="84" y="158" width="344" height="7" rx="3.5" fill="#fff" opacity="0.55"/>
+  <circle cx="232" cy="210" r="9" fill="#fff"/>
+  <circle cx="280" cy="210" r="9" fill="#fff"/>
+  </g>
+</svg>
