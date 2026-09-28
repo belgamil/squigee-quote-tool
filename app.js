@@ -305,7 +305,6 @@ function renderPrior() {
   priorEmpty.textContent = saved.length ? "No quotes match your search." : status.loading ? "" : "No saved quotes yet.";
   priorEmpty.hidden = list.length > 0;
   priorSearch.hidden = !saved.length;
-  document.getElementById("export-quotes").hidden = !saved.length;
 };
 
 const TRASH_ICON =
@@ -326,36 +325,6 @@ async function deleteQuote(q) {
   }
   renderPrior();
 }
-
-// ---------- Export ----------
-// Every saved quote as a CSV file that opens in Excel, Numbers or Google Sheets.
-function quotesCsv() {
-  const cell = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-  const header = [
-    "Quote #", "Created", "First Name", "Last Name", "Street", "Suite No", "City", "State", "Zip", "Phone", "Email", "Notes",
-    "Services", "Window Service", "Window Condition", "Cleaning Difficulty", ...SIZES, "Total",
-  ];
-  const rows = quotes
-    .filter((q) => !isEmpty(q))
-    .sort((a, b) => a.number - b.number)
-    .map((q) => {
-      const c = q.contact;
-      const w = q.services.Windows || {};
-      const total = quoteTotal(q)?.toFixed(2) ?? "";
-      return [
-        q.number, usDate(q.createdAt), c.firstName, c.lastName, c.street, c.suite, c.city, c.state, c.zip, c.phone, c.email, q.notes,
-        Object.keys(q.services).join("; "), w.windowService, w.windowCondition, w.cleaningDifficulty,
-        ...SIZES.map((s) => w.counts?.[s] ?? ""), total,
-      ];
-    });
-  return [header, ...rows].map((r) => r.map(cell).join(",")).join("\r\n");
-}
-
-document.getElementById("export-quotes").addEventListener("click", async () => {
-  const date = new Date().toISOString().slice(0, 10);
-  const file = new File(["\ufeff" + quotesCsv()], `Squeegee-Squad-Quotes-${date}.csv`, { type: "text/csv" });
-  await shareOrDownload(file, { title: "Squeegee Squad quotes" });
-});
 
 // ---------- 1. Contact ----------
 const contactForm = document.getElementById("contact");

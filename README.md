@@ -7,9 +7,7 @@ Mobile-first web app for window washing crews to build price quotes in the field
 - **Main** (Squeegee Squad Quote) – two large buttons: Create New Quote and View Prior Quote.
 - **Prior Quotes** – saved quotes sorted by last name then address (quotes
   without a name go last), with a search box for name or address. The trash
-  icon deletes a quote (after confirming). **Export All Quotes** saves every
-  quote as a CSV spreadsheet (contact info, answers, counts and total).
-  Tap one to open its quote.
+  icon deletes a quote (after confirming). Tap one to open its quote.
 - **Contact** – first and last name, property address (street, suite no,
   city, state – prefilled as CA – and zip), phone (formatted as
   (408) 472-7924 while typing), email and notes. Laid out to fit on one phone
