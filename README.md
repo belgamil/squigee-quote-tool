@@ -98,8 +98,12 @@ in **Sent By** / **Quoted By** on their quotes.
 without the team code. To lock someone out (e.g. a lost phone), change
 `TEAM_CODE` – every phone will ask for the new code.
 
-After editing `Code.gs`, use **Deploy → Manage deployments → Edit → New
-version** so the URL stays the same.
+After editing `Code.gs`, use **Deploy → Manage deployments → Edit (pencil) →
+Version: New version → Deploy** so the URL stays the same. New columns are added
+to the Quotes tab automatically, in their place, without disturbing existing rows.
+
+The **Total** column is the quote's dollar total as priced in the app ("TBD" while
+any line has no price). It updates whenever a quote is saved or opened.
 
 ## Running it
 

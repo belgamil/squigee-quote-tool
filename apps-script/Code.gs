@@ -17,10 +17,11 @@ const HEADERS = [
   "Quote #", "Created", "Updated", "Created By",
   "First Name", "Last Name", "Street", "Suite No", "City", "State", "Zip", "Phone", "Email", "Notes",
   "Services", "Window Service", "Window Condition", "Cleaning Difficulty",
-  "XS", "S", "M", "L", "XL", "Screen", "Skylight",
+  "XS", "S", "M", "L", "XL", "Screen", "Skylight", "Total",
   "ID", "App Data (don't edit)",
 ];
 const ID_COL = HEADERS.indexOf("ID");
+const TOTAL_COL = HEADERS.indexOf("Total");
 const DATA_COL = HEADERS.length - 1;
 
 function doGet() {
@@ -81,8 +82,26 @@ function getSheet() {
     sheet = ss.insertSheet(SHEET_NAME);
     sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]).setFontWeight("bold");
     sheet.setFrozenRows(1);
+    formatTotal(sheet);
   }
+  addMissingColumns(sheet);
   return sheet;
+}
+
+// Columns added in later versions are inserted in their place, so existing rows stay lined up.
+function addMissingColumns(sheet) {
+  const header = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  HEADERS.forEach((name, i) => {
+    if (header.includes(name)) return;
+    sheet.insertColumnBefore(i + 1);
+    sheet.getRange(1, i + 1).setValue(name).setFontWeight("bold");
+    header.splice(i, 0, name);
+    if (i === TOTAL_COL) formatTotal(sheet);
+  });
+}
+
+function formatTotal(sheet) {
+  sheet.getRange(2, TOTAL_COL + 1, sheet.getMaxRows() - 1, 1).setNumberFormat("$#,##0.00");
 }
 
 function dataRows(sheet) {
@@ -141,6 +160,7 @@ function toRow(q) {
     c.firstName, c.lastName, c.street, c.suite, c.city, c.state, c.zip, c.phone, c.email, q.notes,
     Object.keys(q.services || {}).join(", "), w.windowService, w.windowCondition, w.cleaningDifficulty,
     counts.XS, counts.S, counts.M, counts.L, counts.XL, counts.Screen, counts.Skylight,
+    typeof q.total === "number" ? q.total : "TBD",
     q.id, JSON.stringify(q),
   ].map(safe);
 }

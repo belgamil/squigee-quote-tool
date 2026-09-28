@@ -41,6 +41,8 @@ function loadCurrentId() {
 
 // Saves the quote being worked on (blank ones are skipped) and remembers which one it is.
 function saveQuotes() {
+  // The quote sheet shows the total, so keep it up to date with every save.
+  if (current) current.total = quoteTotal(current);
   try {
     localStorage.setItem(CURRENT_KEY, current ? current.id : "");
   } catch {
@@ -339,8 +341,7 @@ function quotesCsv() {
     .map((q) => {
       const c = q.contact;
       const w = q.services.Windows || {};
-      const totals = quoteSections(q).map((sec) => sec.total);
-      const total = totals.length && totals.every((t) => t != null) ? totals.reduce((a, b) => a + b, 0).toFixed(2) : "";
+      const total = quoteTotal(q)?.toFixed(2) ?? "";
       return [
         q.number, usDate(q.createdAt), c.firstName, c.lastName, c.street, c.suite, c.city, c.state, c.zip, c.phone, c.email, q.notes,
         Object.keys(q.services).join("; "), w.windowService, w.windowCondition, w.cleaningDifficulty,
@@ -556,6 +557,13 @@ function jobDescription(service, d) {
     .join(" ");
 }
 
+// Whole-quote total in dollars, or null while any line is still TBD.
+function quoteTotal(q) {
+  const totals = quoteSections(q).map((sec) => sec.total);
+  if (!totals.length || totals.some((t) => t == null)) return null;
+  return Math.round(totals.reduce((a, b) => a + b, 0) * 100) / 100;
+}
+
 // One section per service, each with its own line items and totals (like the paper quote).
 // Money values are null until every line item has a price.
 function quoteSections(q) {
@@ -718,6 +726,8 @@ function renderSyncStatus() {
 }
 
 onShow.quote = () => {
+  // Prices may have changed since the quote was last saved; resave so the sheet's total matches.
+  if (current.total !== quoteTotal(current)) saveQuotes();
   renderInvoice(current);
   renderPriceStatus();
   renderSyncStatus();
