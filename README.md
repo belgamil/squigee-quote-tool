@@ -19,13 +19,15 @@ Mobile-first web app for window washing crews to build price quotes in the field
 - **Window Count** – XS–XL windows plus Screen and Skylight counters.
   **Add to Quote** puts the windows on the quote.
 - **Quote** – invoice-style view: contact info at the top, one line item per
-  service, total and notes. Tap a line item to change it, **Edit** to change
-  contact info, **Edit Services** to add or change services.
-  **Email Quote** / **Text Quote** build a PDF of the quote and open the phone's
-  share sheet with it attached – pick Mail or Messages there. (Web apps can't
+  service, total and notes. Tap a line item to change it; **Edit** jumps to
+  Window Count. **Send Quote** builds a PDF of the quote and opens the phone's
+  share sheet with it attached – pick Messages or Mail there. (Web apps can't
   open Mail/Messages with a file already attached, so the share sheet is the
   way to send an attachment.) Browsers that can't share files download the PDF
   and open a pre-filled email or text instead.
+
+Every screen after Contact shows the customer's name and street under the
+header; tap it to edit the contact info.
 
 Every screen has a **Home** button at the top. Quotes are saved on the device (localStorage). Prices show as "TBD" until the
 pricing rules are added in `priceFor()` in `app.js`.

@@ -109,13 +109,14 @@ function screenId(hash = location.hash) {
 function show(id) {
   if (NEEDS_QUOTE.includes(id) && !current) id = "home";
   for (const screen of document.querySelectorAll(".screen")) screen.hidden = screen.id !== id;
+  renderContactStrip(document.querySelector(`#${id} .contact-strip`));
   onShow[id]?.();
   window.scrollTo(0, 0);
   document.querySelector(`#${id} h1`).focus({ preventScroll: true });
 }
 
-function go(id) {
-  history.pushState({ depth: (history.state?.depth || 0) + 1 }, "", `#${id}`);
+function go(id, extra = {}) {
+  history.pushState({ ...extra, depth: (history.state?.depth || 0) + 1 }, "", `#${id}`);
   show(id);
 }
 
@@ -135,6 +136,21 @@ function goHome() {
 }
 
 window.addEventListener("popstate", () => show(screenId()));
+
+// First Last · Street under the header, so the crew knows whose quote this is.
+function renderContactStrip(strip) {
+  if (!strip) return;
+  const c = current.contact;
+  const name = fullName(c);
+  const parts = [name && el("span", "strip-name", name), c.street && el("span", "strip-street", c.street)].filter(Boolean);
+  if (parts.length === 2) parts.splice(1, 0, el("span", null, "·"));
+  strip.replaceChildren(...(parts.length ? parts : [el("span", "strip-street", "No contact info – tap to add")]));
+}
+
+// Tapping the strip edits the contact, then returns to the screen it came from.
+for (const strip of document.querySelectorAll(".contact-strip")) {
+  strip.addEventListener("click", () => go("contact", { returnAfterContact: true }));
+}
 for (const btn of document.querySelectorAll(".back")) btn.addEventListener("click", back);
 for (const btn of document.querySelectorAll(".home-btn")) btn.addEventListener("click", goHome);
 
@@ -216,8 +232,9 @@ contactForm.addEventListener("submit", (e) => {
   e.preventDefault();
   for (const key of Object.keys(current.contact)) current.contact[key] = current.contact[key].trim();
   saveQuotes();
+  if (history.state?.returnAfterContact) back();
   // Editing contact info on a quote that already has services goes back to the quote.
-  go(Object.keys(current.services).length ? "quote" : "services");
+  else go(Object.keys(current.services).length ? "quote" : "services");
 });
 
 // ---------- 2. Services To Quote ----------
@@ -514,8 +531,8 @@ function pdfName(q) {
 
 // Opens the phone's share sheet with the PDF attached (pick Messages or Mail).
 // Where files can't be shared (e.g. a desktop browser), saves the PDF and opens
-// a pre-filled email/text so it can be attached by hand.
-async function sendQuote(channel) {
+// a pre-filled email (or text, if there's only a phone number) to attach it by hand.
+async function sendQuote() {
   if (!window.jspdf) return alert("The PDF tool is still loading. Try again in a moment.");
   const q = current;
   const file = new File([quotePdf(q)], pdfName(q), { type: "application/pdf" });
@@ -540,16 +557,22 @@ async function sendQuote(channel) {
   setTimeout(() => URL.revokeObjectURL(url), 60000);
 
   const body = `${message}\n\nThe quote PDF (${file.name}) is attached.`;
-  location.href =
-    channel === "email"
-      ? `mailto:${encodeURIComponent(q.contact.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
-      : `sms:${q.contact.phone.replace(/[^\d+]/g, "")}?&body=${encodeURIComponent(body)}`;
+  const phone = q.contact.phone.replace(/[^\d+]/g, "");
+  if (q.contact.email || !phone) {
+    location.href = `mailto:${encodeURIComponent(q.contact.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  } else {
+    location.href = `sms:${phone}?&body=${encodeURIComponent(body)}`;
+  }
 }
 
-document.getElementById("email-quote").addEventListener("click", () => sendQuote("email"));
-document.getElementById("text-quote").addEventListener("click", () => sendQuote("text"));
-document.getElementById("edit-contact").addEventListener("click", () => go("contact"));
-document.getElementById("edit-services").addEventListener("click", () => go("services"));
+document.getElementById("send-quote").addEventListener("click", sendQuote);
+
+// Edit jumps straight to the window counts (or the service list if windows aren't on the quote yet).
+document.getElementById("edit-windows").addEventListener("click", () => {
+  if (!current.services.Windows) return go("services");
+  beginWindows();
+  go("window-count");
+});
 document.getElementById("quote-done").addEventListener("click", goHome);
 
 // ---------- Start ----------

@@ -92,6 +92,37 @@ button { font: inherit; }
 
 .back:active { background: var(--border); }
 
+/* Who this quote is for, shown on every screen after Contact. Tap to edit. */
+.contact-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 10px;
+  background: var(--brand-tint);
+  color: var(--brand-dark);
+  font-size: 0.95rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.contact-strip::before {
+  content: "";
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  background: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='12' cy='8' r='4'/%3E%3Cpath d='M4 21c0-4 4-6 8-6s8 2 8 6'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.contact-strip::after { content: "›"; margin-left: auto; font-size: 1.4rem; line-height: 1; opacity: 0.7; }
+.contact-strip:active { background: var(--border); }
+.strip-name { font-weight: 700; }
+.strip-street { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 .empty, .muted { color: var(--muted); }
 .empty { text-align: center; padding: 24px 0; margin: 0; }
 
@@ -113,8 +144,6 @@ button { font: inherit; }
 .secondary:active { background: var(--soft); }
 .outline { border: 2px solid var(--brand); background: var(--card); color: var(--brand); }
 .outline:active { background: var(--brand-tint); }
-.quote-footer { flex-wrap: wrap; }
-.quote-footer .footer-btn { flex: 1 1 40%; }
 .primary { border: none; background: var(--brand); color: #fff; }
 .primary:active { background: var(--brand-dark); }
 .primary:disabled { opacity: 0.4; cursor: not-allowed; }
