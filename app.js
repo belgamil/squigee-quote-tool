@@ -432,7 +432,7 @@ function renderInvoice(q) {
   const estimate = el("div", "inv-estimate");
   const estTitle = el("div", "inv-estimate-title");
   estTitle.append(el("strong", null, "FREE ESTIMATE"), el("span", null, COMPANY.validFor));
-  estimate.append(estTitle, infoRows("inv-lines", [["Date Emailed:", usDate(q.sentAt)], ["Sent By:", ""]]));
+  estimate.append(estTitle, infoRows("inv-lines", [["Date Emailed:", usDate(q.createdAt)], ["Sent By:", ""]]));
 
   const top = el("div", "inv-top");
   top.append(brand, estimate);
@@ -594,7 +594,7 @@ function quotePdf(q) {
     doc.text("FREE ESTIMATE", (bx + R) / 2, 47, { align: "center" });
     font(8.5, true);
     doc.text(COMPANY.validFor, (bx + R) / 2, 63, { align: "center" });
-    for (const [label, value, y] of [["Date Emailed:", usDate(q.sentAt), 93], ["Sent By:", "", 110]]) {
+    for (const [label, value, y] of [["Date Emailed:", usDate(q.createdAt), 93], ["Sent By:", "", 110]]) {
       font(7.5, true);
       doc.text(label, bx + 6, y);
       font(8.5);
@@ -760,8 +760,6 @@ function pdfName(q) {
 async function sendQuote() {
   if (!window.jspdf) return alert("The PDF tool is still loading. Try again in a moment.");
   const q = current;
-  q.sentAt = new Date().toISOString(); // "Date Emailed" on the quote
-  saveQuotes();
   const file = new File([quotePdf(q)], pdfName(q), { type: "application/pdf" });
   const where = oneLineAddress(q.contact);
   const subject = `Quote #${q.number}${where ? " – " + where : ""}`;

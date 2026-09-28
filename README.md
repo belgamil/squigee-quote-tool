@@ -19,7 +19,7 @@ Mobile-first web app for window washing crews to build price quotes in the field
 - **Window Count** – XS–XL windows plus Screen and Skylight counters.
   **Add to Quote** puts the windows on the quote.
 - **Quote** – laid out like the company's paper quote: logo and FREE ESTIMATE
-  box, thank-you note, customer block, then per service a job box, line-item
+  box (dated the day the quote was created), thank-you note, customer block, then per service a job box, line-item
   table (Qty, Description, Unit Price, Total) with discount, sub-total, tax and
   total, and the terms. Tap a line item or **Edit** to change it. Contact notes
   show below the quote but are not included when it is sent. **Send Quote**
