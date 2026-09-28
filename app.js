@@ -2,9 +2,6 @@
 const STORAGE_KEY = "squigee.quotes";
 const CURRENT_KEY = "squigee.currentQuoteId";
 
-// Shown at the top of the PDF quote.
-const BUSINESS_NAME = "Squeege Squad";
-
 // Alphabetical. `screen` is where tapping the service starts its workflow.
 const SERVICES = [
   { name: "Christmas Lights" },
@@ -19,9 +16,10 @@ const EXTRAS = ["Screen", "Skylight"];
 const SIZES = [...WINDOW_SIZES, ...EXTRAS];
 
 // ---------- Pricing ----------
-// Returns the cost of one line item in dollars, or null when it can't be priced yet.
+// Unit price in dollars for one line item (e.g. key "M" = medium windows), or
+// null when it can't be priced yet. `details` has the Window Details answers.
 // TODO: fill in once the pricing rules are known.
-function priceFor(service, details) {
+function unitPrice(service, key, details) {
   return null;
 }
 
@@ -362,164 +360,391 @@ document.getElementById("add-windows").addEventListener("click", () => {
 });
 
 // ---------- Quote ----------
-// Detail lines for one service, e.g. Windows: "Outside/Inside", "7 windows: S 4 · M 3", ...
-function describe(service, d) {
+const SIZE_NAMES = { XS: "Extra Small", S: "Small", M: "Medium", L: "Large", XL: "Extra Large" };
+const usDate = (iso) => (iso ? new Date(iso).toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" }) : "");
+const amount = (n) => (n == null ? "TBD" : money(n));
+const percent = (rate) => `${+(rate * 100).toFixed(2)}%`;
+
+// Line items for one service: { key, qty, description, unitPrice }.
+function lineItems(service, d) {
   if (service !== "Windows") return [];
-  const sizes = WINDOW_SIZES.filter((s) => d.counts[s]);
-  const windowCount = sizes.reduce((sum, s) => sum + d.counts[s], 0);
+  const side = d.windowService === "Outside" ? "Out" : "In/Out";
   return [
-    d.windowService,
-    d.windowCondition && `Condition: ${d.windowCondition}`,
-    d.cleaningDifficulty && `Difficulty: ${d.cleaningDifficulty}`,
-    windowCount ? `${plural(windowCount, "window")}: ${sizes.map((s) => `${s} ${d.counts[s]}`).join(" · ")}` : "No windows",
-    d.counts.Screen && plural(d.counts.Screen, "screen"),
-    d.counts.Skylight && plural(d.counts.Skylight, "skylight"),
-  ].filter(Boolean);
+    ...WINDOW_SIZES.map((s) => ({ key: s, qty: d.counts[s], description: `${SIZE_NAMES[s]} Windows ${side}` })),
+    { key: "Screen", qty: d.counts.Screen, description: "Screens" },
+    { key: "Skylight", qty: d.counts.Skylight, description: `Skylights ${side}` },
+  ]
+    .filter((item) => item.qty)
+    .map((item) => ({ ...item, unitPrice: unitPrice(service, item.key, d) }));
 }
 
-// Line items and total for a quote, shared by the Quote screen and the PDF.
-function summarize(q) {
-  let total = 0;
-  let unpriced = false;
-  const lines = SERVICES.filter((s) => q.services[s.name]).map((service) => {
-    const details = q.services[service.name];
-    const price = priceFor(service.name, details);
-    if (price == null) unpriced = true;
-    else total += price;
-    return { service, details: describe(service.name, details), amount: price == null ? "TBD" : money(price) };
+function jobDescription(service, d) {
+  if (service !== "Windows") return "";
+  const where = d.windowService === "Outside" ? "exterior" : "interior and exterior";
+  return [
+    `Quote for washing the ${where} of house windows. Includes complimentary light cleaning of screens and cobweb removal around house.`,
+    d.windowCondition && `Window condition: ${d.windowCondition}.`,
+    d.cleaningDifficulty && `Cleaning difficulty: ${d.cleaningDifficulty}.`,
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+// One section per service, each with its own line items and totals (like the paper quote).
+// Money values are null until every line item has a price.
+function quoteSections(q) {
+  return SERVICES.filter((s) => q.services[s.name]).map((service) => {
+    const d = q.services[service.name];
+    const items = lineItems(service.name, d);
+    const priced = items.length > 0 && items.every((i) => i.unitPrice != null);
+    const gross = priced ? items.reduce((sum, i) => sum + i.qty * i.unitPrice, 0) : null;
+    const discount = priced ? gross * COMPANY.discountRate : null;
+    const subtotal = priced ? gross - discount : null;
+    const tax = priced ? subtotal * COMPANY.taxRate : null;
+    return { service, description: jobDescription(service.name, d), items, discount, subtotal, tax, total: priced ? subtotal + tax : null };
   });
-  return { lines, total: unpriced || !lines.length ? "TBD" : money(total) };
 }
 
-const contactLines = (c) => [fullName(c), streetLine(c), cityLine(c), c.phone, c.email].filter(Boolean);
+const addressLines = (c) => [fullName(c), streetLine(c), cityLine(c)].filter(Boolean);
+
+// Label/value rows; `lines` may be several lines (e.g. an address).
+function infoRows(className, rows) {
+  const dl = el("dl", className);
+  for (const [label, value] of rows) {
+    const dd = el("dd");
+    for (const line of [].concat(value || "")) dd.append(el("span", null, line));
+    dl.append(el("dt", null, label), dd);
+  }
+  return dl;
+}
+
+function renderInvoice(q) {
+  const c = q.contact;
+  const invoice = document.getElementById("invoice");
+
+  // Header: logo + company on the left, estimate box on the right.
+  const brand = el("div", "inv-brand");
+  const logo = el("img");
+  logo.src = COMPANY.logo;
+  logo.alt = COMPANY.name;
+  brand.append(logo, el("p", "inv-web", COMPANY.website), el("p", "inv-web", COMPANY.phone), el("p", "inv-legal", `Legal Name: ${COMPANY.legalName}`));
+
+  const estimate = el("div", "inv-estimate");
+  const estTitle = el("div", "inv-estimate-title");
+  estTitle.append(el("strong", null, "FREE ESTIMATE"), el("span", null, COMPANY.validFor));
+  estimate.append(estTitle, infoRows("inv-lines", [["Date Emailed:", usDate(q.sentAt)], ["Sent By:", ""]]));
+
+  const top = el("div", "inv-top");
+  top.append(brand, estimate);
+
+  const customer = el("div", "inv-customer");
+  customer.append(
+    infoRows("inv-lines", [["Customer/Contact", fullName(c)], ["Address", [streetLine(c), cityLine(c)].filter(Boolean)]]),
+    infoRows("inv-lines", [["Company", ""], ["Contact", fullName(c)], ["Phone", c.phone], ["Email", c.email]])
+  );
+
+  const sections = quoteSections(q).map((sec) => {
+    const job = el("section", "inv-job");
+
+    const info = el("div", "inv-job-info");
+    const edit = el("button", "link-btn inv-edit", "Edit");
+    edit.type = "button";
+    edit.addEventListener("click", () => editService(sec.service));
+    info.append(
+      edit,
+      infoRows("inv-job-rows", [
+        ["Name:", fullName(c)],
+        ["Phone:", c.phone],
+        ["Email:", c.email],
+        ["Job Description:", sec.description],
+        ["Job Address:", addressLines(c)],
+      ])
+    );
+
+    const sched = el("div", "inv-sched");
+    for (const [label, value] of [["Scheduled For:", ""], ["Quoted By:", ""], ["Quote Date:", usDate(q.createdAt)]]) {
+      const cell = el("span");
+      cell.append(el("strong", null, label), ` ${value}`);
+      sched.append(cell);
+    }
+
+    const table = el("table", "inv-table");
+    const head = el("tr");
+    for (const h of ["Qty", "Description", "Unit Price", "Total"]) head.append(el("th", null, h));
+    table.append(el("thead"));
+    table.tHead.append(head);
+    const body = el("tbody");
+    for (const item of sec.items) {
+      const row = el("tr");
+      row.append(
+        el("td", "qty", String(item.qty)),
+        el("td", null, item.description),
+        el("td", "num", amount(item.unitPrice)),
+        el("td", "num", amount(item.unitPrice == null ? null : item.qty * item.unitPrice))
+      );
+      // Tap a line to change the answers or counts.
+      row.addEventListener("click", () => startService(sec.service));
+      body.append(row);
+    }
+    if (!sec.items.length) {
+      const row = el("tr");
+      const cell = el("td", "empty-row", "Nothing counted yet.");
+      cell.colSpan = 4;
+      row.append(cell);
+      body.append(row);
+    }
+    const foot = el("tfoot");
+    for (const [label, value, cls] of [
+      [`Discount (${percent(COMPANY.discountRate)})`, sec.discount],
+      ["Sub-Total", sec.subtotal, "alt"],
+      [`Tax (${percent(COMPANY.taxRate)})`, sec.tax],
+      ["Total", sec.total, "grand"],
+    ]) {
+      const row = el("tr", cls);
+      const th = el("th", null, label);
+      th.colSpan = 3;
+      row.append(th, el("td", "num", amount(value)));
+      foot.append(row);
+    }
+    table.append(body, foot);
+
+    job.append(info, sched, table);
+    return job;
+  });
+  if (!sections.length) sections.push(el("p", "empty", "No services added yet."));
+
+  const terms = el("ul", "inv-terms");
+  for (const t of COMPANY.terms) terms.append(el("li", null, t));
+
+  const office = el("footer", "inv-office");
+  office.append(el("p", null, [...COMPANY.address, `Phone: ${COMPANY.phone}`, `Email: ${COMPANY.email}`].join(" · ")), el("p", "inv-web", COMPANY.website));
+
+  invoice.replaceChildren(top, el("p", "inv-intro", COMPANY.intro), customer, ...sections, terms, office);
+}
 
 onShow.quote = () => {
-  document.getElementById("quote-meta").textContent = `#${current.number} · ${shortDate(current.createdAt)}`;
-
-  const contact = contactLines(current.contact);
-  document.getElementById("quote-contact").replaceChildren(
-    ...(contact.length ? contact.map((line) => el("span", null, line)) : [el("span", "muted", "No contact info")])
-  );
-
-  const { lines, total } = summarize(current);
-  document.getElementById("quote-lines").replaceChildren(
-    ...lines.map(({ service, details, amount }) => {
-      // Tap a line to change it.
-      const row = el("button", "line");
-      row.type = "button";
-      const info = el("span", "line-info");
-      info.append(el("span", "line-name", service.name));
-      for (const text of details) info.append(el("span", "line-detail", text));
-      row.append(info, el("span", "line-amount", amount));
-      row.addEventListener("click", () => startService(service));
-      return row;
-    })
-  );
-  document.getElementById("quote-no-lines").hidden = lines.length > 0;
-  document.getElementById("quote-total").textContent = total;
-
-  document.getElementById("quote-notes").textContent = current.notes;
-  document.getElementById("quote-notes-block").hidden = !current.notes.trim();
+  renderInvoice(current);
+  document.getElementById("crew-notes-text").textContent = current.notes;
+  document.getElementById("crew-notes").hidden = !current.notes.trim();
 };
 
+// "Edit" on a service jumps straight to its counts.
+function editService(service) {
+  if (service.name !== "Windows") return startService(service);
+  beginWindows();
+  go("window-count");
+}
+
 // ---------- PDF + sending ----------
-// Letter-size PDF laid out like the Quote screen. Built synchronously so the
-// share sheet can still open from the same tap.
+const logoImage = new Image();
+logoImage.src = COMPANY.logo;
+
+// Letter-size PDF laid out like the company's paper quote: one page per service,
+// terms after the first. Built synchronously so the share sheet can still open
+// from the same tap.
 function quotePdf(q) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: "pt", format: "letter" });
   const W = doc.internal.pageSize.getWidth();
   const H = doc.internal.pageSize.getHeight();
-  const M = 54; // margin
-  const BRAND = [11, 111, 184];
-  const MUTED = [93, 107, 120];
-  const TEXT = [28, 39, 51];
-  let y = M;
+  const L = 27; // left edge
+  const R = W - 27; // right edge
+  const BLUE = [74, 144, 226];
+  const NAVY = [31, 95, 160];
+  const LINK = [21, 101, 192];
+  const LAVENDER = [232, 234, 246];
+  const PEACH = [252, 235, 218];
+  const RULE = [210, 218, 226];
+  const TEXT = [20, 20, 20];
+  const c = q.contact;
 
-  const ensure = (h) => {
-    if (y + h > H - M) {
+  const font = (size, bold = false, color = TEXT) => {
+    doc.setFont("helvetica", bold ? "bold" : "normal");
+    doc.setFontSize(size);
+    doc.setTextColor(...color);
+  };
+  const line = (x1, y1, x2, y2, color = TEXT, width = 0.75) => {
+    doc.setDrawColor(...color);
+    doc.setLineWidth(width);
+    doc.line(x1, y1, x2, y2);
+  };
+  const box = (x, y, w, h, { fill, stroke, width = 1 } = {}) => {
+    if (fill) doc.setFillColor(...fill);
+    if (stroke) {
+      doc.setDrawColor(...stroke);
+      doc.setLineWidth(width);
+    }
+    doc.rect(x, y, w, h, fill && stroke ? "FD" : fill ? "F" : "S");
+  };
+
+  // Logo, company lines and the FREE ESTIMATE box. Returns the y below it.
+  function pageHeader() {
+    const cx = 106;
+    if (logoImage.complete && logoImage.naturalWidth) doc.addImage(logoImage, "PNG", cx - 57, 20, 114, 50);
+    font(9.5, true, LINK);
+    doc.text(COMPANY.website, cx, 86, { align: "center" });
+    doc.text(COMPANY.phone, cx, 99, { align: "center" });
+    font(7.5);
+    doc.text(`Legal Name: ${COMPANY.legalName}`, cx, 114, { align: "center" });
+
+    const bx = 392;
+    box(bx, 20, R - bx, 104, { fill: LAVENDER, stroke: NAVY, width: 1.5 });
+    box(bx + 7, 27, R - bx - 14, 46, { fill: LAVENDER, stroke: [60, 60, 60], width: 0.75 });
+    font(13, true);
+    doc.text("FREE ESTIMATE", (bx + R) / 2, 47, { align: "center" });
+    font(8.5, true);
+    doc.text(COMPANY.validFor, (bx + R) / 2, 63, { align: "center" });
+    for (const [label, value, y] of [["Date Emailed:", usDate(q.sentAt), 93], ["Sent By:", "", 110]]) {
+      font(7.5, true);
+      doc.text(label, bx + 6, y);
+      font(8.5);
+      doc.text(value, bx + 80, y);
+      line(bx + 76, y + 3, R - 7, y + 3);
+    }
+    return 136;
+  }
+
+  // Label + underlined value(s), like a filled-in paper form.
+  function formField(label, values, x, labelW, right, y) {
+    font(9, true);
+    doc.text(label, x, y);
+    const lines = [].concat(values || "");
+    lines.forEach((v, i) => {
+      font(8.5);
+      doc.text(v, x + labelW, y + i * 18 - 1);
+      line(x + labelW - 2, y + i * 18 + 3, right, y + i * 18 + 3);
+    });
+    return y + Math.max(1, lines.length) * 18;
+  }
+
+  function officeFooter() {
+    font(7.5, false, [90, 90, 90]);
+    doc.text([...COMPANY.address, `Phone: ${COMPANY.phone}`, `Email: ${COMPANY.email}`, COMPANY.website].join("  ·  "), W / 2, H - 20, { align: "center" });
+  }
+
+  const sections = quoteSections(q);
+  let y = pageHeader();
+
+  // Thank-you paragraph and customer block (first page only).
+  font(8.5, true);
+  const intro = doc.splitTextToSize(COMPANY.intro, R - L);
+  doc.text(intro, L - 5, y);
+  y += intro.length * 10.5 + 12;
+  const nameEnd = formField("Customer/Contact", fullName(c), L - 5, 100, 370, y);
+  const leftEnd = formField("Address", [streetLine(c), cityLine(c)].filter(Boolean), L - 5, 100, 370, nameEnd);
+  let ry = y;
+  for (const [label, value] of [["Company", ""], ["Contact", fullName(c)], ["Phone", c.phone], ["Email", c.email]]) {
+    ry = formField(label, value, 395, 50, R, ry);
+  }
+  y = Math.max(leftEnd, ry) + 2;
+
+  if (!sections.length) {
+    font(10);
+    doc.text("No services added yet.", L, y + 10);
+    y += 30;
+  }
+
+  sections.forEach((sec, index) => {
+    if (index > 0) {
+      officeFooter();
       doc.addPage();
-      y = M;
+      y = pageHeader() + 6;
     }
-  };
-  const text = (str, x, opts = {}) => {
-    doc.setFont("helvetica", opts.bold ? "bold" : "normal");
-    doc.setFontSize(opts.size || 11);
-    doc.setTextColor(...(opts.color || TEXT));
-    doc.text(str, x, y, { align: opts.align || "left" });
-  };
-  const label = (str) => {
-    text(str.toUpperCase(), M, { size: 9, bold: true, color: MUTED });
-    y += 16;
-  };
 
-  // Header
-  text(BUSINESS_NAME, M, { size: 12, bold: true, color: MUTED });
-  y += 30;
-  text("QUOTE", M, { size: 26, bold: true, color: BRAND });
-  text(`#${q.number}`, W - M, { size: 12, bold: true, align: "right" });
-  y += 16;
-  text(shortDate(q.createdAt), W - M, { size: 11, color: MUTED, align: "right" });
-  y += 30;
+    // Job box
+    const valueX = L + 169;
+    const valueW = R - valueX - 8;
+    const rows = [
+      ["Name:", [fullName(c)]],
+      ["Phone:", [c.phone]],
+      ["Email:", [c.email]],
+      ["Job Description:", doc.splitTextToSize(sec.description, valueW)],
+      ["Job Address:", addressLines(c)],
+    ];
+    const rowH = (r) => Math.max(1, r[1].filter(Boolean).length) * 11 + 5;
+    const jobH = rows.reduce((h, r) => h + rowH(r), 8);
+    box(L, y, R - L, jobH + 22, { stroke: NAVY, width: 1 });
+    let jy = y + 14;
+    for (const r of rows) {
+      font(9, true);
+      doc.text(r[0], L + 7, jy);
+      font(8.5);
+      doc.text(r[1].filter(Boolean), valueX, jy, { lineHeightFactor: 1.3 });
+      jy += rowH(r);
+    }
+    y += jobH;
+    line(L, y, R, y, NAVY, 1);
+    font(9, true);
+    doc.text("Scheduled For:", L + 7, y + 14);
+    doc.text("Quoted By:", L + 220, y + 14);
+    doc.text("Quote Date:", L + 405, y + 14);
+    font(8.5);
+    doc.text(usDate(q.createdAt), L + 462, y + 14);
+    y += 22;
 
-  // Prepared for
-  label("Prepared for");
-  const contact = contactLines(q.contact);
-  contact.forEach((line, i) => {
-    text(line, M, { bold: i === 0 && !!fullName(q.contact) });
-    y += 15;
+    // Table
+    const cols = [L, L + 76, L + 438, L + 468 + 30]; // Qty | Description | Unit Price | Total
+    box(L, y, R - L, 22, { fill: BLUE });
+    font(9.5, true, [20, 20, 20]);
+    doc.text("Qty", (cols[0] + cols[1]) / 2, y + 15, { align: "center" });
+    doc.text("Description", cols[1] + 6, y + 15);
+    doc.text("Unit Price", (cols[2] + cols[3]) / 2, y + 15, { align: "center" });
+    doc.text("Total", (cols[3] + R) / 2, y + 15, { align: "center" });
+    y += 22;
+    const ROW = 16;
+    const items = sec.items.length ? sec.items : [{ qty: "", description: "Nothing counted yet.", unitPrice: null, empty: true }];
+    for (const item of items) {
+      font(8.5, false, [60, 60, 60]);
+      doc.text(String(item.qty), (cols[0] + cols[1]) / 2, y + 11, { align: "center" });
+      doc.text(item.description, cols[1] + 4, y + 11);
+      if (!item.empty) {
+        doc.text(amount(item.unitPrice), cols[3] - 4, y + 11, { align: "right" });
+        doc.text(amount(item.unitPrice == null ? null : item.qty * item.unitPrice), R - 4, y + 11, { align: "right" });
+      }
+      line(L, y + 16, R, y + 16, RULE, 0.5);
+      y += ROW;
+    }
+    for (const [label, value, style] of [
+      [`Discount (${percent(COMPANY.discountRate)})`, sec.discount],
+      ["Sub-Total", sec.subtotal, "alt"],
+      [`Tax (${percent(COMPANY.taxRate)})`, sec.tax],
+      ["Total", sec.total, "grand"],
+    ]) {
+      if (style === "alt") box(L, y, R - L, ROW, { fill: [238, 245, 253] });
+      if (style === "grand") box(L, y, R - L, ROW, { fill: BLUE });
+      const color = style === "grand" ? [255, 255, 255] : [60, 60, 60];
+      font(8.5, true, color);
+      doc.text(label, cols[3] - 6, y + 11, { align: "right" });
+      font(style === "grand" ? 10 : 8.5, style === "grand", color);
+      doc.text(amount(value), R - 4, y + 11, { align: "right" });
+      y += ROW;
+    }
+    box(L, y - ROW * (items.length + 4) - 22, R - L, ROW * (items.length + 4) + 22, { stroke: NAVY, width: 1 });
+    y += 14;
+
+    // Terms after the first service, as on the paper quote.
+    if (index === 0) {
+      font(8);
+      const bullets = COMPANY.terms.map((t) => doc.splitTextToSize(t, R - L - 40));
+      const termsH = bullets.reduce((h, b) => h + b.length * 9.5 + 6, 16);
+      if (y + termsH > H - 30) {
+        officeFooter();
+        doc.addPage();
+        y = pageHeader() + 6;
+      }
+      box(L, y, R - L, termsH, { fill: PEACH, stroke: NAVY, width: 1.5 });
+      let ty = y + 16;
+      for (const b of bullets) {
+        font(8);
+        doc.setFillColor(...TEXT);
+        doc.circle(L + 17, ty - 2.5, 1.8, "F");
+        doc.text(b, L + 30, ty, { lineHeightFactor: 1.2 });
+        ty += b.length * 9.5 + 6;
+      }
+      y += termsH + 10;
+    }
   });
-  if (!contact.length) {
-    text("No contact info", M, { color: MUTED });
-    y += 15;
-  }
-  y += 20;
-
-  // Line items
-  const { lines, total } = summarize(q);
-  text("SERVICE", M, { size: 9, bold: true, color: MUTED });
-  text("AMOUNT", W - M, { size: 9, bold: true, color: MUTED, align: "right" });
-  y += 8;
-  doc.setDrawColor(...TEXT);
-  doc.setLineWidth(1.5);
-  doc.line(M, y, W - M, y);
-  y += 20;
-  for (const line of lines) {
-    ensure(20 + line.details.length * 14);
-    text(line.service.name, M, { size: 12, bold: true });
-    text(line.amount, W - M, { size: 12, bold: true, align: "right" });
-    y += 16;
-    for (const detail of line.details) {
-      text(detail, M, { size: 10, color: MUTED });
-      y += 14;
-    }
-    y += 4;
-    doc.setDrawColor(217, 225, 232);
-    doc.setLineWidth(0.75);
-    doc.line(M, y, W - M, y);
-    y += 20;
-  }
-  if (!lines.length) {
-    text("No services added yet.", M, { color: MUTED });
-    y += 24;
-  }
-  ensure(30);
-  text("Total", M, { size: 14, bold: true });
-  text(total, W - M, { size: 14, bold: true, align: "right" });
-  y += 36;
-
-  // Notes
-  if (q.notes.trim()) {
-    ensure(40);
-    label("Notes");
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(11);
-    for (const row of doc.splitTextToSize(q.notes.trim(), W - 2 * M)) {
-      ensure(15);
-      text(row, M);
-      y += 15;
-    }
-  }
+  officeFooter();
 
   return doc.output("blob");
 }
@@ -535,10 +760,12 @@ function pdfName(q) {
 async function sendQuote() {
   if (!window.jspdf) return alert("The PDF tool is still loading. Try again in a moment.");
   const q = current;
+  q.sentAt = new Date().toISOString(); // "Date Emailed" on the quote
+  saveQuotes();
   const file = new File([quotePdf(q)], pdfName(q), { type: "application/pdf" });
   const where = oneLineAddress(q.contact);
   const subject = `Quote #${q.number}${where ? " – " + where : ""}`;
-  const message = `Hi${q.contact.firstName ? " " + q.contact.firstName : ""}, here is your window cleaning quote from ${BUSINESS_NAME}.`;
+  const message = `Hi${q.contact.firstName ? " " + q.contact.firstName : ""}, here is your window cleaning quote from ${COMPANY.name}.`;
 
   if (navigator.canShare?.({ files: [file] })) {
     try {
@@ -567,12 +794,6 @@ async function sendQuote() {
 
 document.getElementById("send-quote").addEventListener("click", sendQuote);
 
-// Edit jumps straight to the window counts (or the service list if windows aren't on the quote yet).
-document.getElementById("edit-windows").addEventListener("click", () => {
-  if (!current.services.Windows) return go("services");
-  beginWindows();
-  go("window-count");
-});
 document.getElementById("quote-done").addEventListener("click", goHome);
 
 // ---------- Start ----------
