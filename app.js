@@ -208,15 +208,66 @@ onShow.prior = () => {
         saveQuotes();
         go("quote");
       });
-      const li = el("li");
-      li.append(btn);
+
+      const del = el("button", "prior-delete");
+      del.type = "button";
+      del.setAttribute("aria-label", `Delete quote #${q.number}`);
+      del.innerHTML = TRASH_ICON;
+      del.addEventListener("click", () => deleteQuote(q));
+
+      const li = el("li", "prior-row");
+      li.append(btn, del);
       return li;
     })
   );
   priorEmpty.textContent = saved.length ? "No quotes match your search." : "No saved quotes yet.";
   priorEmpty.hidden = list.length > 0;
   priorSearch.hidden = !saved.length;
+  document.getElementById("export-quotes").hidden = !saved.length;
 };
+
+const TRASH_ICON =
+  '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 13h12l1-13M9 7V4h6v3"/></svg>';
+
+function deleteQuote(q) {
+  const who = fullName(q.contact) || q.contact.street || `quote #${q.number}`;
+  if (!confirm(`Delete the quote for ${who}? This can't be undone.`)) return;
+  quotes.splice(quotes.indexOf(q), 1);
+  if (current === q) current = null;
+  saveQuotes();
+  onShow.prior();
+}
+
+// ---------- Export ----------
+// Every saved quote as a CSV file that opens in Excel, Numbers or Google Sheets.
+function quotesCsv() {
+  const cell = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const header = [
+    "Quote #", "Created", "First Name", "Last Name", "Street", "Suite No", "City", "State", "Zip", "Phone", "Email", "Notes",
+    "Services", "Window Service", "Window Condition", "Cleaning Difficulty", ...SIZES, "Total",
+  ];
+  const rows = quotes
+    .filter((q) => !isEmpty(q))
+    .sort((a, b) => a.number - b.number)
+    .map((q) => {
+      const c = q.contact;
+      const w = q.services.Windows || {};
+      const totals = quoteSections(q).map((sec) => sec.total);
+      const total = totals.length && totals.every((t) => t != null) ? totals.reduce((a, b) => a + b, 0).toFixed(2) : "";
+      return [
+        q.number, usDate(q.createdAt), c.firstName, c.lastName, c.street, c.suite, c.city, c.state, c.zip, c.phone, c.email, q.notes,
+        Object.keys(q.services).join("; "), w.windowService, w.windowCondition, w.cleaningDifficulty,
+        ...SIZES.map((s) => w.counts?.[s] ?? ""), total,
+      ];
+    });
+  return [header, ...rows].map((r) => r.map(cell).join(",")).join("\r\n");
+}
+
+document.getElementById("export-quotes").addEventListener("click", async () => {
+  const date = new Date().toISOString().slice(0, 10);
+  const file = new File(["\ufeff" + quotesCsv()], `Squeegee-Squad-Quotes-${date}.csv`, { type: "text/csv" });
+  await shareOrDownload(file, { title: "Squeegee Squad quotes" });
+});
 
 // ---------- 1. Contact ----------
 const contactForm = document.getElementById("contact");
@@ -775,6 +826,26 @@ function pdfName(q) {
 // Opens the phone's share sheet with the PDF attached (pick Messages or Mail).
 // Where files can't be shared (e.g. a desktop browser), saves the PDF and opens
 // a pre-filled email (or text, if there's only a phone number) to attach it by hand.
+// Opens the share sheet with the file attached. Where files can't be shared
+// (e.g. a desktop browser) it downloads the file instead and returns false.
+async function shareOrDownload(file, { title, text } = {}) {
+  if (navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title, text });
+    } catch (err) {
+      if (err.name !== "AbortError") alert("Couldn't open sharing. Try again.");
+    }
+    return true;
+  }
+  const url = URL.createObjectURL(file);
+  const a = el("a");
+  a.href = url;
+  a.download = file.name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+  return false;
+}
+
 async function sendQuote() {
   if (!window.jspdf) return alert("The PDF tool is still loading. Try again in a moment.");
   const q = current;
@@ -791,21 +862,7 @@ async function sendQuote() {
   const subject = `Quote #${q.number}${where ? " – " + where : ""}`;
   const message = `Hi${q.contact.firstName ? " " + q.contact.firstName : ""}, here is your window cleaning quote from ${COMPANY.name}.`;
 
-  if (navigator.canShare?.({ files: [file] })) {
-    try {
-      await navigator.share({ files: [file], title: subject, text: message });
-    } catch (err) {
-      if (err.name !== "AbortError") alert("Couldn't open sharing. Try again.");
-    }
-    return;
-  }
-
-  const url = URL.createObjectURL(file);
-  const a = el("a");
-  a.href = url;
-  a.download = file.name;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 60000);
+  if (await shareOrDownload(file, { title: subject, text: message })) return;
 
   const body = `${message}\n\nThe quote PDF (${file.name}) is attached.`;
   const phone = q.contact.phone.replace(/[^\d+]/g, "");
