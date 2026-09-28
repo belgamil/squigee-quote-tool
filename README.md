@@ -15,15 +15,23 @@ Mobile-first web app for window washing crews to build price quotes in the field
   a service opens its workflow; only Windows has one so far.
 - **Window Details** – Window Service (Outside or Outside/Inside), Window
   Condition (New Construction, Heavy, Lite) and Cleaning Difficulty (Standard,
-  High, Extreme).
+  High, Extreme – defaults to Standard).
 - **Window Count** – XS–XL windows plus Screen and Skylight counters.
   **Add to Quote** puts the windows on the quote.
 - **Quote** – invoice-style view: contact info at the top, one line item per
   service, total and notes. Tap a line item to change it, **Edit** to change
   contact info, **Edit Services** to add or change services.
+  **Email Quote** / **Text Quote** build a PDF of the quote and open the phone's
+  share sheet with it attached – pick Mail or Messages there. (Web apps can't
+  open Mail/Messages with a file already attached, so the share sheet is the
+  way to send an attachment.) Browsers that can't share files download the PDF
+  and open a pre-filled email or text instead.
 
 Every screen has a **Home** button at the top. Quotes are saved on the device (localStorage). Prices show as "TBD" until the
 pricing rules are added in `priceFor()` in `app.js`.
+
+PDFs are made with [jsPDF](https://github.com/parallax/jsPDF) 2.5.1 (MIT),
+kept in `vendor/` so it works with poor signal.
 
 ## Running it
 

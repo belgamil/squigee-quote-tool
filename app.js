@@ -2,6 +2,9 @@
 const STORAGE_KEY = "squigee.quotes";
 const CURRENT_KEY = "squigee.currentQuoteId";
 
+// Shown at the top of the PDF quote.
+const BUSINESS_NAME = "Squeege Squad";
+
 // Alphabetical. `screen` is where tapping the service starts its workflow.
 const SERVICES = [
   { name: "Christmas Lights" },
@@ -251,12 +254,14 @@ const WINDOW_QUESTIONS = ["windowService", "windowCondition", "cleaningDifficult
 function emptyWindows() {
   return {
     ...Object.fromEntries(WINDOW_QUESTIONS.map((q) => [q, ""])),
+    cleaningDifficulty: "Standard",
     counts: Object.fromEntries(SIZES.map((s) => [s, 0])),
   };
 }
 
 function beginWindows() {
-  current.windowDraft = structuredClone(current.services.Windows || emptyWindows());
+  // Start from the saved line (if any), filling in answers added since it was saved.
+  current.windowDraft = { ...emptyWindows(), ...structuredClone(current.services.Windows || {}) };
   saveQuotes();
 }
 
@@ -355,41 +360,194 @@ function describe(service, d) {
   ].filter(Boolean);
 }
 
-onShow.quote = () => {
-  const c = current.contact;
-  document.getElementById("quote-meta").textContent = `#${current.number} · ${shortDate(current.createdAt)}`;
-
-  const contactLines = [fullName(c), streetLine(c), cityLine(c), c.phone, c.email].filter(Boolean);
-  document.getElementById("quote-contact").replaceChildren(
-    ...(contactLines.length ? contactLines.map((line) => el("span", null, line)) : [el("span", "muted", "No contact info")])
-  );
-
+// Line items and total for a quote, shared by the Quote screen and the PDF.
+function summarize(q) {
   let total = 0;
   let unpriced = false;
-  const lines = SERVICES.filter((s) => current.services[s.name]).map((service) => {
-    const details = current.services[service.name];
+  const lines = SERVICES.filter((s) => q.services[s.name]).map((service) => {
+    const details = q.services[service.name];
     const price = priceFor(service.name, details);
     if (price == null) unpriced = true;
     else total += price;
-
-    // Tap a line to change it.
-    const row = el("button", "line");
-    row.type = "button";
-    const info = el("span", "line-info");
-    info.append(el("span", "line-name", service.name));
-    for (const text of describe(service.name, details)) info.append(el("span", "line-detail", text));
-    row.append(info, el("span", "line-amount", price == null ? "TBD" : money(price)));
-    row.addEventListener("click", () => startService(service));
-    return row;
+    return { service, details: describe(service.name, details), amount: price == null ? "TBD" : money(price) };
   });
-  document.getElementById("quote-lines").replaceChildren(...lines);
+  return { lines, total: unpriced || !lines.length ? "TBD" : money(total) };
+}
+
+const contactLines = (c) => [fullName(c), streetLine(c), cityLine(c), c.phone, c.email].filter(Boolean);
+
+onShow.quote = () => {
+  document.getElementById("quote-meta").textContent = `#${current.number} · ${shortDate(current.createdAt)}`;
+
+  const contact = contactLines(current.contact);
+  document.getElementById("quote-contact").replaceChildren(
+    ...(contact.length ? contact.map((line) => el("span", null, line)) : [el("span", "muted", "No contact info")])
+  );
+
+  const { lines, total } = summarize(current);
+  document.getElementById("quote-lines").replaceChildren(
+    ...lines.map(({ service, details, amount }) => {
+      // Tap a line to change it.
+      const row = el("button", "line");
+      row.type = "button";
+      const info = el("span", "line-info");
+      info.append(el("span", "line-name", service.name));
+      for (const text of details) info.append(el("span", "line-detail", text));
+      row.append(info, el("span", "line-amount", amount));
+      row.addEventListener("click", () => startService(service));
+      return row;
+    })
+  );
   document.getElementById("quote-no-lines").hidden = lines.length > 0;
-  document.getElementById("quote-total").textContent = unpriced || !lines.length ? "TBD" : money(total);
+  document.getElementById("quote-total").textContent = total;
 
   document.getElementById("quote-notes").textContent = current.notes;
   document.getElementById("quote-notes-block").hidden = !current.notes.trim();
 };
 
+// ---------- PDF + sending ----------
+// Letter-size PDF laid out like the Quote screen. Built synchronously so the
+// share sheet can still open from the same tap.
+function quotePdf(q) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: "pt", format: "letter" });
+  const W = doc.internal.pageSize.getWidth();
+  const H = doc.internal.pageSize.getHeight();
+  const M = 54; // margin
+  const BRAND = [11, 111, 184];
+  const MUTED = [93, 107, 120];
+  const TEXT = [28, 39, 51];
+  let y = M;
+
+  const ensure = (h) => {
+    if (y + h > H - M) {
+      doc.addPage();
+      y = M;
+    }
+  };
+  const text = (str, x, opts = {}) => {
+    doc.setFont("helvetica", opts.bold ? "bold" : "normal");
+    doc.setFontSize(opts.size || 11);
+    doc.setTextColor(...(opts.color || TEXT));
+    doc.text(str, x, y, { align: opts.align || "left" });
+  };
+  const label = (str) => {
+    text(str.toUpperCase(), M, { size: 9, bold: true, color: MUTED });
+    y += 16;
+  };
+
+  // Header
+  text(BUSINESS_NAME, M, { size: 12, bold: true, color: MUTED });
+  y += 30;
+  text("QUOTE", M, { size: 26, bold: true, color: BRAND });
+  text(`#${q.number}`, W - M, { size: 12, bold: true, align: "right" });
+  y += 16;
+  text(shortDate(q.createdAt), W - M, { size: 11, color: MUTED, align: "right" });
+  y += 30;
+
+  // Prepared for
+  label("Prepared for");
+  const contact = contactLines(q.contact);
+  contact.forEach((line, i) => {
+    text(line, M, { bold: i === 0 && !!fullName(q.contact) });
+    y += 15;
+  });
+  if (!contact.length) {
+    text("No contact info", M, { color: MUTED });
+    y += 15;
+  }
+  y += 20;
+
+  // Line items
+  const { lines, total } = summarize(q);
+  text("SERVICE", M, { size: 9, bold: true, color: MUTED });
+  text("AMOUNT", W - M, { size: 9, bold: true, color: MUTED, align: "right" });
+  y += 8;
+  doc.setDrawColor(...TEXT);
+  doc.setLineWidth(1.5);
+  doc.line(M, y, W - M, y);
+  y += 20;
+  for (const line of lines) {
+    ensure(20 + line.details.length * 14);
+    text(line.service.name, M, { size: 12, bold: true });
+    text(line.amount, W - M, { size: 12, bold: true, align: "right" });
+    y += 16;
+    for (const detail of line.details) {
+      text(detail, M, { size: 10, color: MUTED });
+      y += 14;
+    }
+    y += 4;
+    doc.setDrawColor(217, 225, 232);
+    doc.setLineWidth(0.75);
+    doc.line(M, y, W - M, y);
+    y += 20;
+  }
+  if (!lines.length) {
+    text("No services added yet.", M, { color: MUTED });
+    y += 24;
+  }
+  ensure(30);
+  text("Total", M, { size: 14, bold: true });
+  text(total, W - M, { size: 14, bold: true, align: "right" });
+  y += 36;
+
+  // Notes
+  if (q.notes.trim()) {
+    ensure(40);
+    label("Notes");
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
+    for (const row of doc.splitTextToSize(q.notes.trim(), W - 2 * M)) {
+      ensure(15);
+      text(row, M);
+      y += 15;
+    }
+  }
+
+  return doc.output("blob");
+}
+
+function pdfName(q) {
+  const who = q.contact.lastName || q.contact.street || "";
+  return `Quote-${q.number}${who ? "-" + who.replace(/[^\w]+/g, "-") : ""}.pdf`;
+}
+
+// Opens the phone's share sheet with the PDF attached (pick Messages or Mail).
+// Where files can't be shared (e.g. a desktop browser), saves the PDF and opens
+// a pre-filled email/text so it can be attached by hand.
+async function sendQuote(channel) {
+  if (!window.jspdf) return alert("The PDF tool is still loading. Try again in a moment.");
+  const q = current;
+  const file = new File([quotePdf(q)], pdfName(q), { type: "application/pdf" });
+  const where = oneLineAddress(q.contact);
+  const subject = `Quote #${q.number}${where ? " – " + where : ""}`;
+  const message = `Hi${q.contact.firstName ? " " + q.contact.firstName : ""}, here is your window cleaning quote from ${BUSINESS_NAME}.`;
+
+  if (navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: subject, text: message });
+    } catch (err) {
+      if (err.name !== "AbortError") alert("Couldn't open sharing. Try again.");
+    }
+    return;
+  }
+
+  const url = URL.createObjectURL(file);
+  const a = el("a");
+  a.href = url;
+  a.download = file.name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+
+  const body = `${message}\n\nThe quote PDF (${file.name}) is attached.`;
+  location.href =
+    channel === "email"
+      ? `mailto:${encodeURIComponent(q.contact.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+      : `sms:${q.contact.phone.replace(/[^\d+]/g, "")}?&body=${encodeURIComponent(body)}`;
+}
+
+document.getElementById("email-quote").addEventListener("click", () => sendQuote("email"));
+document.getElementById("text-quote").addEventListener("click", () => sendQuote("text"));
 document.getElementById("edit-contact").addEventListener("click", () => go("contact"));
 document.getElementById("edit-services").addEventListener("click", () => go("services"));
 document.getElementById("quote-done").addEventListener("click", goHome);

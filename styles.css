@@ -111,6 +111,10 @@ button { font: inherit; }
 
 .secondary { border: 1px solid var(--border); background: transparent; color: var(--muted); }
 .secondary:active { background: var(--soft); }
+.outline { border: 2px solid var(--brand); background: var(--card); color: var(--brand); }
+.outline:active { background: var(--brand-tint); }
+.quote-footer { flex-wrap: wrap; }
+.quote-footer .footer-btn { flex: 1 1 40%; }
 .primary { border: none; background: var(--brand); color: #fff; }
 .primary:active { background: var(--brand-dark); }
 .primary:disabled { opacity: 0.4; cursor: not-allowed; }
