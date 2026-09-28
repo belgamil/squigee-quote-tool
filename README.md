@@ -18,7 +18,7 @@ Mobile-first web app for window washing crews to build price quotes in the field
   a service opens its workflow; only Windows has one so far.
 - **Window Details** – Window Service (Outside or Outside/Inside), Window
   Condition (New Construction, Heavy, Lite) and Cleaning Difficulty (Standard,
-  High, Extreme – defaults to Standard).
+  Heavy, Lite – defaults to Standard).
 - **Window Count** – XS–XL windows plus Screen and Skylight counters.
   **Add to Quote** puts the windows on the quote.
 - **Quote** – laid out like the company's paper quote: logo and FREE ESTIMATE
@@ -48,11 +48,11 @@ up the next time the app opens.
 Each service has its own tab (`priceSheet.tabs` maps service name to the tab's
 `gid`). Columns are found by their header, so they can be in any order:
 
-| Service | Windows | Dirty | Size | Standard | High | Extreme |
+| Service | Windows | Dirty | Size | Standard | Heavy | Lite |
 |---|---|---|---|---|---|---|
 | Windows | Outside or Outside/Inside | New Construction, Lite or Heavy | XS, S, M, L, XL, Screen, Skylight | $11.00 | $11.55 | $12.10 |
 
-The quote's Cleaning Difficulty picks the Standard, High or Extreme column. (A
+The quote's Cleaning Difficulty picks the Standard, Heavy or Lite column. (A
 tab with a single "Price" column uses that price for every difficulty.)
 
 A line item shows "TBD" (and so does the total) when no row matches it. When a

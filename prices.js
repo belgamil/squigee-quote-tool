@@ -1,13 +1,13 @@
 // Price list from the Google Sheet in COMPANY.priceSheet.
 //
 // Each tab has a header row; columns are found by name, so they can be moved:
-//   Service | Windows (Outside or Outside/Inside) | Dirty (condition) | Size | Standard | High | Extreme
-// Standard / High / Extreme are the prices for each Cleaning Difficulty. A tab with a
+//   Service | Windows (Outside or Outside/Inside) | Dirty (condition) | Size | Standard | Heavy | Lite
+// Standard / Heavy / Lite are the prices for each Cleaning Difficulty. A tab with a
 // single "Price" column instead uses that price for every difficulty.
 // The last prices loaded are kept on the phone so quoting works without signal.
 const Prices = (() => {
   const CACHE_KEY = "squigee.prices.v2"; // v2: prices per cleaning difficulty
-  const DIFFICULTIES = ["Standard", "High", "Extreme"];
+  const DIFFICULTIES = ["Standard", "Heavy", "Lite"]; // must match the Cleaning Difficulty choices
   const COLUMNS = {
     service: ["service"],
     type: ["windows", "window service", "type"],
@@ -83,7 +83,7 @@ const Prices = (() => {
     const priceCols = DIFFICULTIES.map((d) => [d, header.findIndex((h) => norm(h) === norm(d))]).filter(([, i]) => i >= 0);
     const priceFor = priceCols.length ? priceCols : col.price >= 0 ? DIFFICULTIES.map((d) => [d, col.price]) : [];
     if (col.size < 0 || !priceFor.length) {
-      throw new Error(`The ${service} tab needs a "Size" column and "Standard", "High", "Extreme" price columns.`);
+      throw new Error(`The ${service} tab needs a "Size" column and "Standard", "Heavy", "Lite" price columns.`);
     }
 
     const table = {};
