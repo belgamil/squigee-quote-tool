@@ -4,16 +4,23 @@ Mobile-first web app for window washing crews to build price quotes in the field
 
 ## Screens
 
-1. **Contact** – first name, last name, property address, phone, email.
-2. **Services To Quote** – tap any of Christmas Lights, Gutter, Solar, Windows.
-3. **Window Details** – shown only when Windows is selected: Window Service
-   (Outside or Outside/Inside) and New Construction (Yes or No).
-4. **Window Count** – XS, S, M, L, XL window sizes plus extras (Screen,
-   Skylight), each with large **−** / **+** buttons. The window total is shown
-   at the top (screens and skylights are counted separately).
+- **Main** – two large buttons: Create New Quote and View Prior Quote.
+- **Prior Quotes** – saved quotes sorted by last name, showing the address.
+  Tap one to open its quote.
+- **Contact** – first and last name (last name required), property address
+  (street, suite no, city, state, zip), phone, email and notes.
+- **Services To Quote** – one button per service, in alphabetical order. Tapping
+  a service opens its workflow; only Windows has one so far.
+- **Window Details** – Window Service (Outside or Outside/Inside) and New
+  Construction (Yes or No).
+- **Window Count** – XS–XL windows plus Screen and Skylight counters.
+  **Add to Quote** puts the windows on the quote.
+- **Quote** – invoice-style view: contact info at the top, one line item per
+  service, total and notes. Tap a line item to change it, **Edit** to change
+  contact info, **Add Service** for another service.
 
-Everything entered is saved on the device, so a refresh doesn't lose it. The
-phone's back button/gesture moves between screens.
+Quotes are saved on the device (localStorage). Prices show as "TBD" until the
+pricing rules are added in `priceFor()` in `app.js`.
 
 ## Running it
 

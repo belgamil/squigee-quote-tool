@@ -8,9 +8,39 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <!-- Main -->
+  <section class="screen" id="home" hidden>
+    <header class="app-header">
+      <h1 tabindex="-1">Squigee Quote</h1>
+    </header>
+    <main class="home-grid">
+      <button id="new-quote" class="tile tile-primary" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        Create New Quote
+      </button>
+      <button id="view-prior" class="tile" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>
+        View Prior Quote
+      </button>
+    </main>
+  </section>
+
+  <!-- Prior quotes -->
+  <section class="screen" id="prior" hidden>
+    <header class="app-header">
+      <button class="back" type="button" aria-label="Back">‹</button>
+      <h1 tabindex="-1">Prior Quotes</h1>
+    </header>
+    <main>
+      <ul id="prior-list" class="prior-list"></ul>
+      <p id="prior-empty" class="empty" hidden>No saved quotes yet.</p>
+    </main>
+  </section>
+
   <!-- 1. Contact -->
   <form class="screen" id="contact" hidden>
     <header class="app-header">
+      <button class="back" type="button" aria-label="Back">‹</button>
       <h1 tabindex="-1">Contact</h1>
     </header>
     <main class="fields">
@@ -18,16 +48,36 @@
         <input name="firstName" type="text" autocomplete="given-name" autocapitalize="words">
       </label>
       <label class="field">Last Name
-        <input name="lastName" type="text" autocomplete="family-name" autocapitalize="words">
+        <input name="lastName" type="text" autocomplete="family-name" autocapitalize="words" required>
       </label>
-      <label class="field">Property Address
-        <textarea name="address" rows="2" autocomplete="street-address" autocapitalize="words"></textarea>
-      </label>
+      <fieldset class="field-group">
+        <legend>Property Address</legend>
+        <label class="field">Street
+          <input name="street" type="text" autocomplete="address-line1" autocapitalize="words">
+        </label>
+        <label class="field">Suite No
+          <input name="suite" type="text" autocomplete="address-line2">
+        </label>
+        <label class="field">City
+          <input name="city" type="text" autocomplete="address-level2" autocapitalize="words">
+        </label>
+        <div class="field-row">
+          <label class="field">State
+            <input name="state" type="text" autocomplete="address-level1" autocapitalize="characters" maxlength="2">
+          </label>
+          <label class="field">Zip
+            <input name="zip" type="text" autocomplete="postal-code" inputmode="numeric" maxlength="10">
+          </label>
+        </div>
+      </fieldset>
       <label class="field">Phone
         <input name="phone" type="tel" autocomplete="tel" inputmode="tel">
       </label>
       <label class="field">Email
         <input name="email" type="email" autocomplete="email" autocapitalize="off">
+      </label>
+      <label class="field">Notes
+        <textarea name="notes" rows="4"></textarea>
       </label>
     </main>
     <footer class="app-footer">
@@ -36,25 +86,19 @@
   </form>
 
   <!-- 2. Services To Quote -->
-  <form class="screen" id="services" hidden>
+  <section class="screen" id="services" hidden>
     <header class="app-header">
       <button class="back" type="button" aria-label="Back">‹</button>
       <h1 tabindex="-1">Services To Quote</h1>
     </header>
-    <main class="choices">
-      <p class="hint">Select all that apply.</p>
-      <!-- Keep in alphabetical order. -->
-      <label class="choice"><input type="checkbox" name="services" value="Christmas Lights"><span>Christmas Lights</span></label>
-      <label class="choice"><input type="checkbox" name="services" value="Gutter"><span>Gutter</span></label>
-      <label class="choice"><input type="checkbox" name="services" value="Solar"><span>Solar</span></label>
-      <label class="choice"><input type="checkbox" name="services" value="Windows"><span>Windows</span></label>
-    </main>
+    <!-- Buttons are built from SERVICES in app.js (alphabetical). -->
+    <main id="service-buttons" class="service-list"></main>
     <footer class="app-footer">
-      <button class="footer-btn primary" type="submit">Next</button>
+      <button id="services-view-quote" class="footer-btn primary" type="button" hidden>View Quote</button>
     </footer>
-  </form>
+  </section>
 
-  <!-- 3. Window Details (only when Windows is selected) -->
+  <!-- 3. Window Details -->
   <form class="screen" id="window-details" hidden>
     <header class="app-header">
       <button class="back" type="button" aria-label="Back">‹</button>
@@ -90,8 +134,45 @@
     </header>
     <main id="counters" class="counters" aria-live="polite"></main>
     <footer class="app-footer">
-      <button id="reset" class="footer-btn reset" type="button">Reset</button>
-      <button id="quote" class="footer-btn primary" type="button">Quote</button>
+      <button id="reset" class="footer-btn secondary" type="button">Reset</button>
+      <button id="add-windows" class="footer-btn primary" type="button">Add to Quote</button>
+    </footer>
+  </section>
+
+  <!-- Quote (invoice) -->
+  <section class="screen" id="quote" hidden>
+    <header class="app-header">
+      <button class="back" type="button" aria-label="Back">‹</button>
+      <h1 tabindex="-1">Quote</h1>
+    </header>
+    <main>
+      <article class="invoice">
+        <div class="invoice-head">
+          <div>
+            <p class="invoice-title">Quote</p>
+            <p class="invoice-meta" id="quote-meta"></p>
+          </div>
+          <button id="edit-contact" class="link-btn" type="button">Edit</button>
+        </div>
+        <div class="invoice-to">
+          <p class="label">Prepared for</p>
+          <address id="quote-contact"></address>
+        </div>
+        <div class="line-items">
+          <div class="line-head"><span>Service</span><span>Amount</span></div>
+          <div id="quote-lines"></div>
+          <p id="quote-no-lines" class="empty" hidden>No services added yet.</p>
+          <div class="line-total"><span>Total</span><span id="quote-total"></span></div>
+        </div>
+        <div id="quote-notes-block" class="invoice-notes" hidden>
+          <p class="label">Notes</p>
+          <p id="quote-notes"></p>
+        </div>
+      </article>
+    </main>
+    <footer class="app-footer">
+      <button id="add-service" class="footer-btn secondary" type="button">Add Service</button>
+      <button id="quote-done" class="footer-btn primary" type="button">Done</button>
     </footer>
   </section>
 

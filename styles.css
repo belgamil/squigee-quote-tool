@@ -1,12 +1,14 @@
 :root {
   --brand: #0b6fb8;
   --brand-dark: #08568f;
+  --brand-tint: #e3f0fa;
   --bg: #f3f6f9;
   --card: #ffffff;
   --text: #1c2733;
   --muted: #5d6b78;
   --border: #d9e1e8;
-  --brand-tint: #e3f0fa;
+  --soft: #e4e9ee;
+  --soft-active: #cfd7df;
 }
 
 * { box-sizing: border-box; }
@@ -25,6 +27,9 @@ body {
   margin: 0 auto;
 }
 
+button { font: inherit; }
+
+/* ---------- Screens ---------- */
 /* Only one screen is visible at a time; each fills the viewport so the footer sits at the bottom. */
 .screen {
   display: flex;
@@ -34,7 +39,6 @@ body {
 }
 
 .screen[hidden] { display: none; }
-
 .screen > main { flex: 1; }
 
 .app-header {
@@ -45,7 +49,6 @@ body {
 }
 
 .app-header h1 { margin: 0; font-size: 1.5rem; flex: 1; outline: none; }
-.total { margin: 0; font-size: 1.1rem; color: var(--muted); }
 
 .back {
   width: 44px;
@@ -62,6 +65,103 @@ body {
 
 .back:active { background: var(--border); }
 
+.empty, .muted { color: var(--muted); }
+.empty { text-align: center; padding: 24px 0; margin: 0; }
+
+/* ---------- Footer buttons ---------- */
+.app-footer { display: flex; gap: 12px; padding: 16px 0; }
+.app-footer:not(:has(button:not([hidden]))) { display: none; }
+
+.footer-btn {
+  flex: 1;
+  padding: 16px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-radius: 12px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.secondary { border: 1px solid var(--border); background: transparent; color: var(--muted); }
+.secondary:active { background: var(--soft); }
+.primary { border: none; background: var(--brand); color: #fff; }
+.primary:active { background: var(--brand-dark); }
+.primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.link-btn {
+  border: none;
+  background: none;
+  padding: 8px;
+  margin: -8px;
+  color: var(--brand);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ---------- Main ---------- */
+.home-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-content: center;
+  padding-bottom: 15vh;
+}
+
+.tile {
+  aspect-ratio: 1;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px;
+  border: 2px solid var(--border);
+  border-radius: 20px;
+  background: var(--card);
+  color: var(--text);
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.tile svg {
+  width: 48px;
+  height: 48px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+
+.tile:active { transform: scale(0.98); }
+.tile-primary { border-color: var(--brand); background: var(--brand); color: #fff; }
+.tile-primary:active { background: var(--brand-dark); }
+
+/* ---------- Prior quotes ---------- */
+.prior-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+
+.prior-item {
+  width: 100%;
+  display: grid;
+  gap: 2px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--card);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.prior-item:active { background: var(--brand-tint); }
+.prior-name { font-size: 1.15rem; font-weight: 700; }
+.prior-address { color: var(--text); }
+.prior-meta { font-size: 0.85rem; color: var(--muted); }
+
 /* ---------- Contact fields ---------- */
 .fields { display: flex; flex-direction: column; gap: 16px; }
 
@@ -69,6 +169,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-width: 0;
   font-weight: 600;
   color: var(--muted);
 }
@@ -90,9 +191,57 @@ body {
 .field input:focus,
 .field textarea:focus { outline: 2px solid var(--brand); border-color: var(--brand); }
 
-/* ---------- Tap-to-select choices (checkboxes and radios) ---------- */
-.choices, .questions { display: flex; flex-direction: column; gap: 12px; }
-.hint { margin: 0 0 4px; color: var(--muted); }
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.field-group legend { padding: 0 6px; font-weight: 700; color: var(--text); }
+.field-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+
+/* ---------- Services To Quote ---------- */
+.service-list { display: flex; flex-direction: column; gap: 12px; }
+
+.service-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 68px;
+  padding: 12px 16px 12px 20px;
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  background: var(--card);
+  color: var(--text);
+  font-size: 1.25rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.service-btn::after { content: "›"; font-size: 2rem; line-height: 1; color: var(--muted); }
+.service-btn:active { border-color: var(--brand); background: var(--brand-tint); }
+.service-name { flex: 1; }
+
+.badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--brand-tint);
+  color: var(--brand-dark);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+/* ---------- Window Details (tap-to-select answers) ---------- */
+.questions { display: flex; flex-direction: column; gap: 12px; }
+.question { margin: 0 0 12px; padding: 0; border: none; }
+.question legend { padding: 0; margin-bottom: 10px; font-size: 1.15rem; font-weight: 700; }
+.segmented { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 
 .choice { display: block; cursor: pointer; }
 .choice input { position: absolute; opacity: 0; pointer-events: none; }
@@ -111,47 +260,14 @@ body {
   text-align: center;
 }
 
-.choices .choice span { justify-content: flex-start; }
-
-/* Checkmark bubble for multi-select services. */
-.choices .choice span::before {
-  content: "";
-  flex-shrink: 0;
-  width: 26px;
-  height: 26px;
-  margin-right: 14px;
-  border: 2px solid var(--border);
-  border-radius: 8px;
-}
-
-.choice input:checked + span {
-  border-color: var(--brand);
-  background: var(--brand-tint);
-  color: var(--brand-dark);
-}
-
-.choices .choice input:checked + span::before {
-  content: "✓";
-  display: grid;
-  place-items: center;
-  border-color: var(--brand);
-  background: var(--brand);
-  color: #fff;
-  font-size: 1rem;
-}
-
+.choice input:checked + span { border-color: var(--brand); background: var(--brand-tint); color: var(--brand-dark); }
 .choice input:focus-visible + span { outline: 3px solid var(--brand); outline-offset: 2px; }
 
-.question { margin: 0 0 12px; padding: 0; border: none; }
-.question legend { padding: 0; margin-bottom: 10px; font-size: 1.15rem; font-weight: 700; }
-.segmented { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+/* ---------- Window Count ---------- */
+.total { margin: 0; font-size: 1.1rem; color: var(--muted); }
 .total span { color: var(--text); font-weight: 700; }
 
-.counters {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
+.counters { display: flex; flex-direction: column; gap: 12px; }
 
 .counter {
   display: flex;
@@ -200,33 +316,77 @@ body {
 }
 
 .btn:active { background: var(--brand-dark); transform: scale(0.95); }
-.btn.minus { background: #e4e9ee; color: var(--text); }
-.btn.minus:active { background: #cfd7df; }
+.btn.minus { background: var(--soft); color: var(--text); }
+.btn.minus:active { background: var(--soft-active); }
 .btn:disabled { opacity: 0.4; }
 
-.app-footer { display: flex; gap: 12px; padding: 16px 0; }
-
-.footer-btn {
-  flex: 1;
-  padding: 16px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  border-radius: 12px;
-  cursor: pointer;
-  touch-action: manipulation;
+/* ---------- Quote (invoice) ---------- */
+.invoice {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--card);
+  box-shadow: 0 1px 3px rgb(28 39 51 / 0.06);
 }
 
-.reset {
-  border: 1px solid var(--border);
-  background: transparent;
+.invoice p { margin: 0; }
+.invoice-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.invoice-title { font-size: 1.6rem; font-weight: 800; letter-spacing: 0.02em; text-transform: uppercase; color: var(--brand); }
+.invoice-meta { color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.label {
+  margin-bottom: 4px !important;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--muted);
 }
 
-.primary {
-  border: none;
-  background: var(--brand);
-  color: #fff;
+.invoice-to address { display: flex; flex-direction: column; font-style: normal; line-height: 1.45; }
+.invoice-to address span:first-child { font-weight: 700; }
+
+.line-head,
+.line-total {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.primary:active { background: var(--brand-dark); }
-.primary:disabled { opacity: 0.4; cursor: not-allowed; }
+.line-head {
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--text);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.line {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 0;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: none;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.line:active { background: var(--brand-tint); }
+.line-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.line-name { font-weight: 700; font-size: 1.05rem; }
+.line-detail { color: var(--muted); font-size: 0.95rem; }
+.line-amount, .line-total span:last-child { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.line-total { padding-top: 12px; font-size: 1.2rem; font-weight: 800; }
+
+.invoice-notes p:last-child { white-space: pre-wrap; line-height: 1.45; }
