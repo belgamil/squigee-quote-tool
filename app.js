@@ -1,28 +1,136 @@
+// ---------- Saved quote ----------
+// Everything entered is kept in localStorage so a refresh in the field doesn't lose work.
+const STORAGE_KEY = "squigee.quote";
+
 // Window sizes add up to the header total; extras are counted separately.
 const WINDOW_SIZES = ["XS", "S", "M", "L", "XL"];
 const EXTRAS = ["Screen", "Skylight"];
 const SIZES = [...WINDOW_SIZES, ...EXTRAS];
-const STORAGE_KEY = "squigee.windowCounts";
 
-// Counts are kept in localStorage so a page refresh in the field doesn't lose work.
-function loadCounts() {
+function emptyQuote() {
+  return {
+    contact: { firstName: "", lastName: "", address: "", phone: "", email: "" },
+    services: [],
+    windowService: "",
+    newConstruction: "",
+    counts: Object.fromEntries(SIZES.map((s) => [s, 0])),
+  };
+}
+
+function loadQuote() {
+  const quote = emptyQuote();
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
-    return Object.fromEntries(SIZES.map((s) => [s, Number(saved[s]) || 0]));
+    Object.assign(quote.contact, saved.contact);
+    if (Array.isArray(saved.services)) quote.services = saved.services;
+    quote.windowService = saved.windowService || "";
+    quote.newConstruction = saved.newConstruction || "";
+    for (const s of SIZES) quote.counts[s] = Number(saved.counts?.[s]) || 0;
   } catch {
-    return Object.fromEntries(SIZES.map((s) => [s, 0]));
+    // Nothing saved or unreadable – start fresh.
   }
+  return quote;
 }
 
-function saveCounts() {
+function saveQuote() {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(counts));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(quote));
   } catch {
-    // Storage unavailable (e.g. private mode) – counts still work for this session.
+    // Storage unavailable (e.g. private mode) – the app still works for this session.
   }
 }
 
-const counts = loadCounts();
+const quote = loadQuote();
+
+// ---------- Navigation ----------
+// Screen order; `back` on each screen goes to the one before it.
+const SCREENS = ["contact", "services", "window-details", "window-count"];
+const PREVIOUS = { services: "contact", "window-details": "services", "window-count": "window-details" };
+
+function show(id) {
+  if (!SCREENS.includes(id)) id = SCREENS[0];
+  for (const screen of document.querySelectorAll(".screen")) screen.hidden = screen.id !== id;
+  window.scrollTo(0, 0);
+  document.querySelector(`#${id} h1`).focus({ preventScroll: true });
+}
+
+// Each screen gets a history entry so the phone's back button/gesture works.
+function go(id) {
+  history.pushState({ depth: (history.state?.depth || 0) + 1 }, "", `#${id}`);
+  show(id);
+}
+
+function back() {
+  const current = location.hash.slice(1);
+  if (history.state?.depth > 0) history.back();
+  else {
+    const prev = PREVIOUS[current] || SCREENS[0];
+    history.replaceState({ depth: 0 }, "", `#${prev}`);
+    show(prev);
+  }
+}
+
+window.addEventListener("popstate", () => show(location.hash.slice(1)));
+for (const btn of document.querySelectorAll(".back")) btn.addEventListener("click", back);
+
+// ---------- 1. Contact ----------
+const contactForm = document.getElementById("contact");
+for (const [name, value] of Object.entries(quote.contact)) {
+  if (contactForm.elements[name]) contactForm.elements[name].value = value;
+}
+contactForm.addEventListener("input", (e) => {
+  quote.contact[e.target.name] = e.target.value.trim();
+  saveQuote();
+});
+contactForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  go("services");
+});
+
+// ---------- 2. Services To Quote ----------
+const servicesForm = document.getElementById("services");
+const servicesNext = servicesForm.querySelector("[type=submit]");
+for (const box of servicesForm.elements.services) box.checked = quote.services.includes(box.value);
+
+function updateServices() {
+  quote.services = [...servicesForm.elements.services].filter((b) => b.checked).map((b) => b.value);
+  servicesNext.disabled = quote.services.length === 0;
+}
+updateServices();
+servicesForm.addEventListener("change", () => {
+  updateServices();
+  saveQuote();
+});
+servicesForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  if (quote.services.includes("Windows")) go("window-details");
+  // Placeholder until screens for the other services are built.
+  else alert("Screens for the other services are coming soon.");
+});
+
+// ---------- 3. Window Details ----------
+const detailsForm = document.getElementById("window-details");
+const detailsNext = detailsForm.querySelector("[type=submit]");
+detailsForm.elements.windowService.value = quote.windowService;
+detailsForm.elements.newConstruction.value = quote.newConstruction;
+
+function updateDetails() {
+  quote.windowService = detailsForm.elements.windowService.value;
+  quote.newConstruction = detailsForm.elements.newConstruction.value;
+  detailsNext.disabled = !quote.windowService || !quote.newConstruction;
+}
+updateDetails();
+detailsForm.addEventListener("change", () => {
+  updateDetails();
+  saveQuote();
+});
+detailsForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  go("window-count");
+});
+
+// ---------- 4. Window Count ----------
+const counts = quote.counts;
 const container = document.getElementById("counters");
 const template = document.getElementById("counter-template");
 const totalEl = document.getElementById("total");
@@ -37,7 +145,7 @@ function render(size) {
 
 function change(size, delta) {
   counts[size] = Math.max(0, counts[size] + delta);
-  saveCounts();
+  saveQuote();
   render(size);
 }
 
@@ -66,7 +174,7 @@ for (const size of SIZES) {
 document.getElementById("reset").addEventListener("click", () => {
   if (!confirm("Reset all counts to 0?")) return;
   for (const size of SIZES) counts[size] = 0;
-  saveCounts();
+  saveQuote();
   SIZES.forEach(render);
 });
 
@@ -74,3 +182,8 @@ document.getElementById("reset").addEventListener("click", () => {
 document.getElementById("quote").addEventListener("click", () => {
   alert("Quote screen coming soon.");
 });
+
+// ---------- Start ----------
+const start = SCREENS.includes(location.hash.slice(1)) ? location.hash.slice(1) : SCREENS[0];
+history.replaceState({ depth: history.state?.depth || 0 }, "", `#${start}`);
+show(start);

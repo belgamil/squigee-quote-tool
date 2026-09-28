@@ -4,21 +4,96 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b6fb8">
-  <title>Squigee Quote – Window Count</title>
+  <title>Squigee Quote</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <header class="app-header">
-    <h1>Window Count</h1>
-    <p class="total">Windows: <span id="total">0</span></p>
-  </header>
+  <!-- 1. Contact -->
+  <form class="screen" id="contact" hidden>
+    <header class="app-header">
+      <h1 tabindex="-1">Contact</h1>
+    </header>
+    <main class="fields">
+      <label class="field">First Name
+        <input name="firstName" type="text" autocomplete="given-name" autocapitalize="words">
+      </label>
+      <label class="field">Last Name
+        <input name="lastName" type="text" autocomplete="family-name" autocapitalize="words">
+      </label>
+      <label class="field">Property Address
+        <textarea name="address" rows="2" autocomplete="street-address" autocapitalize="words"></textarea>
+      </label>
+      <label class="field">Phone
+        <input name="phone" type="tel" autocomplete="tel" inputmode="tel">
+      </label>
+      <label class="field">Email
+        <input name="email" type="email" autocomplete="email" autocapitalize="off">
+      </label>
+    </main>
+    <footer class="app-footer">
+      <button class="footer-btn primary" type="submit">Next</button>
+    </footer>
+  </form>
 
-  <main id="counters" class="counters" aria-live="polite"></main>
+  <!-- 2. Services To Quote -->
+  <form class="screen" id="services" hidden>
+    <header class="app-header">
+      <button class="back" type="button" aria-label="Back">‹</button>
+      <h1 tabindex="-1">Services To Quote</h1>
+    </header>
+    <main class="choices">
+      <p class="hint">Select all that apply.</p>
+      <!-- Keep in alphabetical order. -->
+      <label class="choice"><input type="checkbox" name="services" value="Christmas Lights"><span>Christmas Lights</span></label>
+      <label class="choice"><input type="checkbox" name="services" value="Gutter"><span>Gutter</span></label>
+      <label class="choice"><input type="checkbox" name="services" value="Solar"><span>Solar</span></label>
+      <label class="choice"><input type="checkbox" name="services" value="Windows"><span>Windows</span></label>
+    </main>
+    <footer class="app-footer">
+      <button class="footer-btn primary" type="submit">Next</button>
+    </footer>
+  </form>
 
-  <footer class="app-footer">
-    <button id="reset" class="footer-btn reset" type="button">Reset</button>
-    <button id="quote" class="footer-btn quote" type="button">Quote</button>
-  </footer>
+  <!-- 3. Window Details (only when Windows is selected) -->
+  <form class="screen" id="window-details" hidden>
+    <header class="app-header">
+      <button class="back" type="button" aria-label="Back">‹</button>
+      <h1 tabindex="-1">Window Details</h1>
+    </header>
+    <main class="questions">
+      <fieldset class="question">
+        <legend>Window Service</legend>
+        <div class="segmented">
+          <label class="choice"><input type="radio" name="windowService" value="Outside"><span>Outside</span></label>
+          <label class="choice"><input type="radio" name="windowService" value="Outside/Inside"><span>Outside/Inside</span></label>
+        </div>
+      </fieldset>
+      <fieldset class="question">
+        <legend>New Construction</legend>
+        <div class="segmented">
+          <label class="choice"><input type="radio" name="newConstruction" value="Yes"><span>Yes</span></label>
+          <label class="choice"><input type="radio" name="newConstruction" value="No"><span>No</span></label>
+        </div>
+      </fieldset>
+    </main>
+    <footer class="app-footer">
+      <button class="footer-btn primary" type="submit">Next</button>
+    </footer>
+  </form>
+
+  <!-- 4. Window Count -->
+  <section class="screen" id="window-count" hidden>
+    <header class="app-header">
+      <button class="back" type="button" aria-label="Back">‹</button>
+      <h1 tabindex="-1">Window Count</h1>
+      <p class="total">Windows: <span id="total">0</span></p>
+    </header>
+    <main id="counters" class="counters" aria-live="polite"></main>
+    <footer class="app-footer">
+      <button id="reset" class="footer-btn reset" type="button">Reset</button>
+      <button id="quote" class="footer-btn primary" type="button">Quote</button>
+    </footer>
+  </section>
 
   <template id="counter-template">
     <section class="counter">
