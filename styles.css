@@ -532,6 +532,23 @@ button { font: inherit; }
 .home-footer[hidden] { display: none; }
 .home-footer { display: flex; flex-wrap: wrap; gap: 4px 12px; justify-content: center; align-items: center; padding: 12px 0; color: var(--muted); text-align: center; }
 .home-footer p { margin: 0; }
+.reveal-field { position: relative; display: block; }
+.reveal-field input { padding-right: 76px; }
+
+.reveal-btn {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  background: var(--brand-tint);
+  color: var(--brand-dark);
+  font-weight: 600;
+  cursor: pointer;
+}
+
 .form-error { margin: 0; padding: 10px 12px; border-radius: 10px; background: #fdecea; color: #b3261e; font-weight: 600; }
 
 .price-status { margin: 8px 2px 0; font-size: 0.8rem; color: var(--muted); }

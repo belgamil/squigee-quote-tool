@@ -19,7 +19,10 @@
         <input name="userName" type="text" autocomplete="name" autocapitalize="words" required>
       </label>
       <label class="field">Team Code
-        <input name="teamCode" type="password" autocomplete="off" autocapitalize="off" required>
+        <span class="reveal-field">
+          <input name="teamCode" type="password" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" required>
+          <button id="toggle-code" class="reveal-btn" type="button" aria-pressed="false">Show</button>
+        </span>
       </label>
       <p id="connect-error" class="form-error" role="alert" hidden></p>
     </main>

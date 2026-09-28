@@ -181,8 +181,21 @@ const connectError = document.getElementById("connect-error");
 onShow.connect = () => {
   connectForm.elements.userName.value = Store.user()?.name || "";
   connectForm.elements.teamCode.value = "";
+  showTeamCode(false);
   connectError.hidden = true;
 };
+
+// Show/Hide lets people check the code for typos before connecting.
+const toggleCode = document.getElementById("toggle-code");
+function showTeamCode(visible) {
+  connectForm.elements.teamCode.type = visible ? "text" : "password";
+  toggleCode.textContent = visible ? "Hide" : "Show";
+  toggleCode.setAttribute("aria-pressed", String(visible));
+}
+toggleCode.addEventListener("click", () => {
+  showTeamCode(connectForm.elements.teamCode.type === "password");
+  connectForm.elements.teamCode.focus();
+});
 
 connectForm.addEventListener("submit", async (e) => {
   e.preventDefault();
