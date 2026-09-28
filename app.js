@@ -19,12 +19,14 @@ const SIZES = [...WINDOW_SIZES, ...EXTRAS];
 // null when the price sheet has no matching row. Prices are frozen on a quote
 // when it's sent, so later price-sheet edits don't change quotes already sent.
 function priceKey(service, key, d) {
-  return Prices.key(service, d.windowService, d.windowCondition, key);
+  return Prices.key(service, d.windowService, d.windowCondition, key, d.cleaningDifficulty);
 }
 
 function unitPrice(q, service, key, d) {
-  const frozen = q.sentPrices?.[priceKey(service, key, d)];
-  return frozen ?? Prices.lookup(service, d.windowService, d.windowCondition, key);
+  // Quotes sent before prices depended on difficulty were frozen under a shorter key.
+  const legacyKey = [service, d.windowService, d.windowCondition, key].map((v) => String(v ?? "").trim().toLowerCase()).join("|");
+  const frozen = q.sentPrices?.[priceKey(service, key, d)] ?? q.sentPrices?.[legacyKey];
+  return frozen ?? Prices.lookup(service, d.windowService, d.windowCondition, key, d.cleaningDifficulty);
 }
 
 // ---------- Saved quotes ----------
@@ -47,20 +49,35 @@ function saveQuotes() {
   if (current && !isEmpty(current)) Store.save(current);
 }
 
+// New quotes start with the state filled in.
+const DEFAULT_STATE = "CA";
+
 function newQuote() {
   return {
     id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
     number: Store.nextNumber(), // null until the quote sheet assigns one
     createdAt: new Date().toISOString(),
     createdBy: Store.user()?.name || "",
-    contact: { firstName: "", lastName: "", street: "", suite: "", city: "", state: "", zip: "", phone: "", email: "" },
+    contact: { firstName: "", lastName: "", street: "", suite: "", city: "", state: DEFAULT_STATE, zip: "", phone: "", email: "" },
     notes: "",
     services: {}, // service name -> details, e.g. services.Windows
   };
 }
 
+// Nothing typed yet (the prefilled state doesn't count), so there's nothing to save.
 function isEmpty(q) {
-  return !Object.values(q.contact).some(Boolean) && !q.notes && !Object.keys(q.services).length;
+  const typed = Object.entries(q.contact).some(([k, v]) => v && !(k === "state" && v === DEFAULT_STATE));
+  return !typed && !q.notes && !Object.keys(q.services).length;
+}
+
+// US phone format as it's typed: (408) 472-7924. A leading 1 / +1 is dropped.
+function formatPhone(value) {
+  let digits = value.replace(/\D/g, "");
+  if (digits.length === 11 && digits[0] === "1") digits = digits.slice(1);
+  if (digits.length > 10) return value; // longer numbers (e.g. with an extension) are left as typed
+  if (digits.length > 6) return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+  if (digits.length > 3) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  return digits;
 }
 
 const quotes = Store.quotes;
@@ -347,9 +364,19 @@ onShow.contact = () => {
   contactForm.elements.notes.value = current.notes;
 };
 contactForm.addEventListener("input", (e) => {
-  const { name, value } = e.target;
+  const input = e.target;
+  // Format the phone while typing at the end; leave mid-number edits and deletes alone.
+  if (input.name === "phone" && !e.inputType?.startsWith("delete") && input.selectionStart === input.value.length) {
+    input.value = formatPhone(input.value);
+  }
+  const { name, value } = input;
   if (name === "notes") current.notes = value;
   else current.contact[name] = name === "state" ? value.toUpperCase() : value;
+  saveQuotes();
+});
+contactForm.elements.phone.addEventListener("blur", (e) => {
+  e.target.value = formatPhone(e.target.value);
+  current.contact.phone = e.target.value;
   saveQuotes();
 });
 contactForm.addEventListener("submit", (e) => {

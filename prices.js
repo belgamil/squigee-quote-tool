@@ -1,10 +1,13 @@
 // Price list from the Google Sheet in COMPANY.priceSheet.
 //
 // Each tab has a header row; columns are found by name, so they can be moved:
-//   Service | Windows (Outside or Outside/Inside) | Dirty (condition) | Size | Price
+//   Service | Windows (Outside or Outside/Inside) | Dirty (condition) | Size | Standard | High | Extreme
+// Standard / High / Extreme are the prices for each Cleaning Difficulty. A tab with a
+// single "Price" column instead uses that price for every difficulty.
 // The last prices loaded are kept on the phone so quoting works without signal.
 const Prices = (() => {
-  const CACHE_KEY = "squigee.prices";
+  const CACHE_KEY = "squigee.prices.v2"; // v2: prices per cleaning difficulty
+  const DIFFICULTIES = ["Standard", "High", "Extreme"];
   const COLUMNS = {
     service: ["service"],
     type: ["windows", "window service", "type"],
@@ -24,7 +27,8 @@ const Prices = (() => {
   };
 
   const norm = (v) => String(v ?? "").trim().toLowerCase();
-  const keyOf = (service, type, condition, size) => [service, type, condition, size].map(norm).join("|");
+  const keyOf = (service, type, condition, size, difficulty) =>
+    [service, type, condition, size, difficulty || "Standard"].map(norm).join("|");
 
   let state = load(); // { table: { "windows|outside|heavy|m": 2 }, loadedAt, error }
   const listeners = [];
@@ -75,15 +79,22 @@ const Prices = (() => {
     for (const [name, aliases] of Object.entries(COLUMNS)) {
       col[name] = header.findIndex((h) => aliases.includes(norm(h)));
     }
-    if (col.size < 0 || col.price < 0) throw new Error(`The ${service} tab needs "Size" and "Price" columns.`);
+    // One price column per difficulty, or a single Price column used for all of them.
+    const priceCols = DIFFICULTIES.map((d) => [d, header.findIndex((h) => norm(h) === norm(d))]).filter(([, i]) => i >= 0);
+    const priceFor = priceCols.length ? priceCols : col.price >= 0 ? DIFFICULTIES.map((d) => [d, col.price]) : [];
+    if (col.size < 0 || !priceFor.length) {
+      throw new Error(`The ${service} tab needs a "Size" column and "Standard", "High", "Extreme" price columns.`);
+    }
 
     const table = {};
     for (const r of rows) {
       const size = SIZES[norm(r[col.size])];
-      const price = parseFloat(String(r[col.price] ?? "").replace(/[$,\s]/g, ""));
-      if (!size || !Number.isFinite(price)) continue;
+      if (!size) continue;
       const rowService = col.service >= 0 && r[col.service] ? r[col.service] : service;
-      table[keyOf(rowService, r[col.type], r[col.condition], size)] = price;
+      for (const [difficulty, i] of priceFor) {
+        const price = parseFloat(String(r[i] ?? "").replace(/[$,\s]/g, ""));
+        if (Number.isFinite(price)) table[keyOf(rowService, r[col.type], r[col.condition], size, difficulty)] = price;
+      }
     }
     return table;
   }
@@ -110,7 +121,7 @@ const Prices = (() => {
 
   return {
     // Unit price for one line item, or null if the sheet has no matching row.
-    lookup: (service, type, condition, size) => state.table[keyOf(service, type, condition, size)] ?? null,
+    lookup: (service, type, condition, size, difficulty) => state.table[keyOf(service, type, condition, size, difficulty)] ?? null,
     key: keyOf,
     refresh,
     onChange: (fn) => listeners.push(fn),

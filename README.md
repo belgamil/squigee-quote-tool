@@ -11,8 +11,9 @@ Mobile-first web app for window washing crews to build price quotes in the field
   quote as a CSV spreadsheet (contact info, answers, counts and total).
   Tap one to open its quote.
 - **Contact** – first and last name, property address (street, suite no,
-  city, state, zip), phone, email and notes. Laid out
-  to fit on one phone screen without scrolling.
+  city, state – prefilled as CA – and zip), phone (formatted as
+  (408) 472-7924 while typing), email and notes. Laid out to fit on one phone
+  screen without scrolling.
 - **Services To Quote** – one button per service, in alphabetical order. Tapping
   a service opens its workflow; only Windows has one so far.
 - **Window Details** – Window Service (Outside or Outside/Inside), Window
@@ -47,9 +48,12 @@ up the next time the app opens.
 Each service has its own tab (`priceSheet.tabs` maps service name to the tab's
 `gid`). Columns are found by their header, so they can be in any order:
 
-| Service | Windows | Dirty | Size | Price |
-|---|---|---|---|---|
-| Windows | Outside or Outside/Inside | New Construction, Lite or Heavy | XS, Small, Medium, Large, XL, Screen, Skylight | $2.00 |
+| Service | Windows | Dirty | Size | Standard | High | Extreme |
+|---|---|---|---|---|---|---|
+| Windows | Outside or Outside/Inside | New Construction, Lite or Heavy | XS, S, M, L, XL, Screen, Skylight | $11.00 | $11.55 | $12.10 |
+
+The quote's Cleaning Difficulty picks the Standard, High or Extreme column. (A
+tab with a single "Price" column uses that price for every difficulty.)
 
 A line item shows "TBD" (and so does the total) when no row matches it. When a
 quote is sent its prices are frozen, so later sheet edits don't change quotes
