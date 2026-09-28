@@ -11,6 +11,7 @@
   <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png?v=2">
   <link rel="manifest" href="manifest.webmanifest?v=2">
   <meta name="apple-mobile-web-app-title" content="SQ Quote">
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -52,11 +53,31 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>
         View Prior Quote
       </button>
+      <button id="view-map" class="tile tile-wide" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+        Customer Map
+      </button>
     </main>
     <footer id="home-footer" class="home-footer" hidden>
       <p id="home-status"></p>
       <button id="switch-user" class="link-btn" type="button">Switch user</button>
     </footer>
+  </section>
+
+  <!-- Customer map -->
+  <section class="screen" id="map-screen" hidden>
+    <header class="app-header">
+      <button class="back" type="button" aria-label="Back">‹</button>
+      <h1 tabindex="-1">Customer Map</h1>
+      <button class="home-btn" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7M5 10v10h5v-6h4v6h5V10"/></svg>
+        Home
+      </button>
+    </header>
+    <main class="map-main">
+      <p id="map-status" class="price-status" hidden></p>
+      <div id="map" class="map"></div>
+    </main>
   </section>
 
   <!-- Prior quotes -->
@@ -97,7 +118,7 @@
         </label>
       </div>
       <fieldset class="field-group">
-        <legend>Property Address</legend>
+        <legend>Property Address <a id="contact-directions" class="directions-link" target="_blank" rel="noopener" hidden>Directions</a></legend>
         <div class="field-row street-row">
           <label class="field">Street
             <input name="street" type="text" autocomplete="address-line1" autocapitalize="words">
@@ -252,6 +273,7 @@
   </template>
 
   <script src="vendor/jspdf.umd.min.js" defer></script>
+  <script src="vendor/leaflet/leaflet.js"></script>
   <script src="company.js"></script>
   <script src="prices.js"></script>
   <script src="store.js"></script>

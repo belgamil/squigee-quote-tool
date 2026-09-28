@@ -8,6 +8,11 @@ Mobile-first web app for window washing crews to build price quotes in the field
 - **Prior Quotes** – saved quotes sorted by last name then address (quotes
   without a name go last), with a search box for name or address. The trash
   icon deletes a quote (after confirming). Tap one to open its quote.
+- **Customer Map** – a pin for every quote's address. Tap a pin for the customer,
+  quote number and total, with **Open Quote** and **Directions** (Google Maps route
+  from where you are). Addresses are looked up once with OpenStreetMap's free
+  geocoder (Nominatim, max one per second) and the coordinates saved on the quote;
+  addresses it can't find are listed above the map. Map tiles © OpenStreetMap.
 - **Contact** – first and last name, property address (street, suite no,
   city, state – prefilled as CA – and zip), phone (formatted as
   (408) 472-7924 while typing), email and notes. Laid out to fit on one phone
@@ -62,6 +67,9 @@ already sent.
 Company details on the quote (name, phone, website, legal name, office
 address, logo, thank-you note, terms, discount and tax rates) live in
 `company.js`.
+
+The map uses [Leaflet](https://leafletjs.com) 1.9.4 (BSD-2), kept in `vendor/leaflet/`.
+The **Directions** link on the Contact and Quote screens opens Google Maps.
 
 PDFs are made with [jsPDF](https://github.com/parallax/jsPDF) 2.5.1 (MIT),
 kept in `vendor/` so it works with poor signal.

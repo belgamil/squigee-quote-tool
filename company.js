@@ -23,6 +23,9 @@ const COMPANY = {
   // heading in the price sheet (upper/lower case doesn't matter). The first is the default.
   cleaningDifficulties: ["Standard", "Difficult", "Extreme"],
 
+  // Where the customer map starts before any pins are placed (the office).
+  mapCenter: [37.507, -122.26],
+
   // Google Sheet with the price list. It must be shared "Anyone with the link: Viewer".
   // `tabs` maps each service to its tab's gid (the number after "gid=" in the sheet's URL).
   priceSheet: {

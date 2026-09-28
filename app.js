@@ -90,6 +90,9 @@ const fullName = (c) => [c.firstName, c.lastName].filter(Boolean).join(" ");
 const streetLine = (c) => [c.street, c.suite && `Suite ${c.suite}`].filter(Boolean).join(", ");
 const cityLine = (c) => [c.city, [c.state, c.zip].filter(Boolean).join(" ")].filter(Boolean).join(", ");
 const oneLineAddress = (c) => [streetLine(c), cityLine(c)].filter(Boolean).join(", ");
+// Google Maps directions from wherever the phone is to the property (opens the Google Maps app if installed).
+const directionsUrl = (c) =>
+  `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent([c.street, c.city, c.state, c.zip].filter(Boolean).join(", "))}`;
 const money = (n) => n.toLocaleString("en-US", { style: "currency", currency: "USD" });
 const shortDate = (iso) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 const quoteNo = (q) => (q.number ? `#${q.number}` : "Not saved yet");
@@ -112,6 +115,7 @@ const PREVIOUS = {
   "window-details": "services",
   "window-count": "window-details",
   quote: "home",
+  "map-screen": "home",
 };
 const NEEDS_QUOTE = ["contact", "services", "window-details", "window-count", "quote"];
 const onShow = {};
@@ -329,9 +333,16 @@ async function deleteQuote(q) {
 // ---------- 1. Contact ----------
 const contactForm = document.getElementById("contact");
 
+const contactDirections = document.getElementById("contact-directions");
+function updateContactDirections() {
+  contactDirections.hidden = !current.contact.street.trim();
+  contactDirections.href = directionsUrl(current.contact);
+}
+
 onShow.contact = () => {
   for (const [name, value] of Object.entries(current.contact)) contactForm.elements[name].value = value;
   contactForm.elements.notes.value = current.notes;
+  updateContactDirections();
 };
 contactForm.addEventListener("input", (e) => {
   const input = e.target;
@@ -342,6 +353,7 @@ contactForm.addEventListener("input", (e) => {
   const { name, value } = input;
   if (name === "notes") current.notes = value;
   else current.contact[name] = name === "state" ? value.toUpperCase() : value;
+  updateContactDirections();
   saveQuotes();
 });
 contactForm.elements.phone.addEventListener("blur", (e) => {
@@ -353,6 +365,7 @@ contactForm.addEventListener("submit", (e) => {
   e.preventDefault();
   for (const key of Object.keys(current.contact)) current.contact[key] = current.contact[key].trim();
   saveQuotes();
+  locate(current); // place it on the customer map
   if (history.state?.returnAfterContact) back();
   // Editing contact info on a quote that already has services goes back to the quote.
   else go(Object.keys(current.services).length ? "quote" : "services");
@@ -593,16 +606,22 @@ function renderInvoice(q) {
     const edit = el("button", "link-btn inv-edit", "Edit");
     edit.type = "button";
     edit.addEventListener("click", () => editService(sec.service));
-    info.append(
-      edit,
-      infoRows("inv-job-rows", [
-        ["Name:", fullName(c)],
-        ["Phone:", c.phone],
-        ["Email:", c.email],
-        ["Job Description:", sec.description],
-        ["Job Address:", addressLines(c)],
-      ])
-    );
+    const rows = infoRows("inv-job-rows", [
+      ["Name:", fullName(c)],
+      ["Phone:", c.phone],
+      ["Email:", c.email],
+      ["Job Description:", sec.description],
+      ["Job Address:", addressLines(c)],
+    ]);
+    // On screen only (not in the PDF): route to the job.
+    if (c.street) {
+      const link = el("a", "directions-link", "Directions");
+      link.href = directionsUrl(c);
+      link.target = "_blank";
+      link.rel = "noopener";
+      rows.lastElementChild.append(link);
+    }
+    info.append(edit, rows);
 
     const sched = el("div", "inv-sched");
     for (const [label, value] of [["Scheduled For:", ""], ["Quoted By:", q.createdBy || ""], ["Quote Date:", usDate(q.createdAt)]]) {
@@ -1021,6 +1040,7 @@ Store.onChange(() => {
   if (visible === "prior") renderPrior();
   if (visible === "quote") renderSyncStatus();
   if (visible === "home") onShow.home();
+  if (visible === "map-screen" && customerMap) renderPins(false);
 });
 Store.refresh(current);
 window.addEventListener("online", () => Store.refresh(current));
@@ -1031,6 +1051,140 @@ setInterval(() => {
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden" && current && Store.isPending(current)) Store.flush(current).catch(() => {});
 });
+
+// ---------- Customer map ----------
+// Addresses are turned into map coordinates with OpenStreetMap's free address lookup
+// (Nominatim): once per new or changed address, at most one lookup per second as its
+// usage policy asks. The result is saved on the quote so it isn't looked up again.
+const addressKey = (c) => [c.street, c.city, c.state, c.zip].map((v) => (v || "").trim().toLowerCase()).join("|");
+const needsLocating = (q) => !!q.contact.street.trim() && q.geo?.key !== addressKey(q.contact);
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+let lookupQueue = Promise.resolve();
+
+function geocode(c) {
+  const params = new URLSearchParams({ format: "json", limit: "1", countrycodes: "us", street: c.street.trim() });
+  if (c.city) params.set("city", c.city);
+  if (c.state) params.set("state", c.state);
+  if (c.zip) params.set("postalcode", c.zip);
+  const lookup = async () => {
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?${params}`);
+      if (!res.ok) throw new Error(`Address lookup failed (${res.status}).`);
+      const [hit] = await res.json();
+      return hit ? { lat: Number(hit.lat), lng: Number(hit.lon) } : null;
+    } finally {
+      await sleep(1100);
+    }
+  };
+  const result = lookupQueue.then(lookup, lookup);
+  lookupQueue = result.catch(() => {});
+  return result;
+}
+
+// Looks up a quote's address if it's new or changed. Addresses that can't be found are
+// remembered too, so they aren't retried until the address is edited.
+async function locate(q) {
+  if (!needsLocating(q)) return;
+  const key = addressKey(q.contact);
+  let hit;
+  try {
+    hit = await geocode(q.contact);
+  } catch {
+    return; // no signal or the service is busy – try again next time
+  }
+  if (addressKey(q.contact) !== key) return; // edited while looking up
+  q.geo = { key, ...(hit || {}) };
+  if (q === current) saveQuotes();
+  else Store.save(q);
+}
+
+let customerMap;
+let pinLayer;
+const mapStatus = document.getElementById("map-status");
+const PIN = L.divIcon({ className: "map-pin", html: "<span></span>", iconSize: [26, 36], iconAnchor: [13, 34], popupAnchor: [0, -30] });
+
+function renderPins(fit) {
+  pinLayer.clearLayers();
+  const placed = quotes.filter((q) => !isEmpty(q) && q.geo?.key === addressKey(q.contact) && q.geo.lat != null);
+  for (const q of placed) {
+    const c = q.contact;
+    const box = el("div", "pin-popup");
+    box.append(el("strong", null, fullName(c) || "No name"));
+    for (const line of [streetLine(c), cityLine(c)].filter(Boolean)) box.append(el("span", null, line));
+    box.append(el("span", "muted", `${quoteNo(q)} · ${amount(quoteTotal(q))}${q.createdBy ? ` · ${q.createdBy}` : ""}`));
+    const actions = el("div", "pin-actions");
+    const open = el("button", "link-btn", "Open Quote");
+    open.type = "button";
+    open.addEventListener("click", () => {
+      current = q;
+      saveQuotes();
+      go("quote");
+    });
+    const route = el("a", "link-btn", "Directions");
+    route.href = directionsUrl(c);
+    route.target = "_blank";
+    route.rel = "noopener";
+    actions.append(open, route);
+    box.append(actions);
+    L.marker([q.geo.lat, q.geo.lng], { icon: PIN, title: fullName(c) || c.street }).bindPopup(box).addTo(pinLayer);
+  }
+  if (fit && placed.length) customerMap.fitBounds(L.latLngBounds(placed.map((q) => [q.geo.lat, q.geo.lng])), { padding: [40, 40], maxZoom: 15 });
+  return placed.length;
+}
+
+function renderMapStatus(text, warn = false) {
+  mapStatus.hidden = !text;
+  mapStatus.textContent = text;
+  mapStatus.classList.toggle("warn", warn);
+}
+
+let locatingAll = false;
+async function locateAll() {
+  if (locatingAll) return;
+  locatingAll = true;
+  try {
+    let todo = quotes.filter((q) => !isEmpty(q) && needsLocating(q));
+    for (let i = 0; i < todo.length; i++) {
+      renderMapStatus(`Placing addresses on the map… ${i + 1} of ${todo.length}`);
+      await locate(todo[i]);
+      renderPins(false);
+    }
+    if (todo.length) renderPins(true); // zoom to fit the newly placed pins too
+    const missing = quotes.filter((q) => !isEmpty(q) && q.contact.street.trim() && q.geo?.key === addressKey(q.contact) && q.geo.lat == null);
+    const offline = quotes.some((q) => !isEmpty(q) && needsLocating(q));
+    renderMapStatus(
+      offline
+        ? "Some addresses couldn't be looked up right now – they'll be placed when there's signal."
+        : missing.length
+          ? `${missing.length === 1 ? "1 address" : `${missing.length} addresses`} couldn't be found: ${missing.map((q) => fullName(q.contact) || q.contact.street).join(", ")}. Check the street, city and zip.`
+          : "",
+      offline || !!missing.length
+    );
+  } finally {
+    locatingAll = false;
+  }
+}
+
+onShow["map-screen"] = () => {
+  if (!customerMap) {
+    customerMap = L.map("map", { zoomControl: true }).setView(COMPANY.mapCenter, 10);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>',
+    }).addTo(customerMap);
+    pinLayer = L.layerGroup().addTo(customerMap);
+  }
+  // The map was sized while hidden; measure again once it's on screen.
+  setTimeout(() => {
+    customerMap.invalidateSize();
+    renderPins(true);
+  }, 0);
+  Store.refresh(current).then(() => {
+    renderPins(true);
+    locateAll();
+  });
+};
+document.getElementById("view-map").addEventListener("click", () => go("map-screen"));
 
 // ---------- Start ----------
 // Keep Home as the first history entry; reopen the saved screen on top of it after a refresh.

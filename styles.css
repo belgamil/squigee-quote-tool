@@ -201,6 +201,9 @@ button { font: inherit; }
   touch-action: manipulation;
 }
 
+.tile-wide { grid-column: 1 / -1; aspect-ratio: auto; flex-direction: row; min-height: 72px; }
+.tile-wide svg { width: 32px; height: 32px; }
+
 .tile svg {
   width: 48px;
   height: 48px;
@@ -550,6 +553,37 @@ button { font: inherit; }
 }
 
 .form-error { margin: 0; padding: 10px 12px; border-radius: 10px; background: #fdecea; color: #b3261e; font-weight: 600; }
+
+/* ---------- Customer map ---------- */
+.map-main { display: flex; flex-direction: column; gap: 8px; padding-bottom: 12px; }
+.map { flex: 1; min-height: 60vh; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+
+/* Teardrop pin drawn in CSS, in the logo's orange. */
+.map-pin span {
+  display: block;
+  width: 26px;
+  height: 26px;
+  border: 3px solid #fff;
+  border-radius: 50% 50% 50% 0;
+  background: #fc5c00;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.4);
+  transform: rotate(-45deg);
+}
+
+.pin-popup { display: flex; flex-direction: column; gap: 2px; font-size: 0.9rem; min-width: 170px; }
+.pin-actions { display: flex; gap: 16px; margin-top: 6px; }
+.pin-actions .link-btn { margin: 0; padding: 4px 0; font-size: 0.95rem; }
+
+.directions-link {
+  margin-left: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--brand);
+  text-decoration: none;
+}
+
+.directions-link::before { content: "➜ "; }
+.inv-job-rows .directions-link { margin: 4px 0 0; }
 
 .price-status { margin: 8px 2px 0; font-size: 0.8rem; color: var(--muted); }
 .price-status.warn { color: #9a5b00; font-weight: 600; }
