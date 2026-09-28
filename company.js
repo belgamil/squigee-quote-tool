@@ -19,6 +19,10 @@ const COMPANY = {
     "Extra Charges: May apply where there are unnoticed conditions (at time of quote) where there is smoke residue, excessive interior ladder work, exterior obstacles, excessive furniture moving, etc. You will be notified of any extra charges that may apply before you choose to continue work. These scenarios are rare.",
   ],
 
+  // Cleaning Difficulty choices on Window Details. Each must match a price column
+  // heading in the price sheet (upper/lower case doesn't matter). The first is the default.
+  cleaningDifficulties: ["Standard", "Difficult", "Extreme"],
+
   // Google Sheet with the price list. It must be shared "Anyone with the link: Viewer".
   // `tabs` maps each service to its tab's gid (the number after "gid=" in the sheet's URL).
   priceSheet: {

@@ -422,7 +422,7 @@ const WINDOW_QUESTIONS = ["windowService", "windowCondition", "cleaningDifficult
 function emptyWindows() {
   return {
     ...Object.fromEntries(WINDOW_QUESTIONS.map((q) => [q, ""])),
-    cleaningDifficulty: "Standard",
+    cleaningDifficulty: COMPANY.cleaningDifficulties[0],
     counts: Object.fromEntries(SIZES.map((s) => [s, 0])),
   };
 }
@@ -439,6 +439,19 @@ function draft() {
 }
 
 // 3. Window Details
+// Cleaning Difficulty buttons come from company.js so they always match the price sheet's columns.
+document.getElementById("difficulty-choices").append(
+  ...COMPANY.cleaningDifficulties.map((value) => {
+    const label = el("label", "choice");
+    const input = el("input");
+    input.type = "radio";
+    input.name = "cleaningDifficulty";
+    input.value = value;
+    label.append(input, el("span", null, value));
+    return label;
+  })
+);
+
 const detailsForm = document.getElementById("window-details");
 const detailsNext = detailsForm.querySelector("[type=submit]");
 
