@@ -29,7 +29,7 @@ const COMPANY = {
   // Google Apps Script web app that stores quotes in the team's Google Sheet
   // (see apps-script/Code.gs). Leave empty to keep quotes on each phone instead.
   quoteStore: {
-    url: "",
+    url: "https://script.google.com/macros/s/AKfycbxyvVD_7V_KFnjMPcO1IQVUu0NpI9zVQKhMOITxmFYsPLQhDlM3u0FQvpN-UJ-eRSqD/exec",
   },
 
   // Applied to every quote's subtotal. 0.1 = 10%.
