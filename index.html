@@ -30,6 +30,10 @@
     <header class="app-header">
       <button class="back" type="button" aria-label="Back">‹</button>
       <h1 tabindex="-1">Prior Quotes</h1>
+      <button class="home-btn" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7M5 10v10h5v-6h4v6h5V10"/></svg>
+        Home
+      </button>
     </header>
     <main>
       <ul id="prior-list" class="prior-list"></ul>
@@ -42,42 +46,52 @@
     <header class="app-header">
       <button class="back" type="button" aria-label="Back">‹</button>
       <h1 tabindex="-1">Contact</h1>
+      <button class="home-btn" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7M5 10v10h5v-6h4v6h5V10"/></svg>
+        Home
+      </button>
     </header>
     <main class="fields">
-      <label class="field">First Name
-        <input name="firstName" type="text" autocomplete="given-name" autocapitalize="words">
-      </label>
-      <label class="field">Last Name
-        <input name="lastName" type="text" autocomplete="family-name" autocapitalize="words" required>
-      </label>
+      <div class="field-row">
+        <label class="field">First Name
+          <input name="firstName" type="text" autocomplete="given-name" autocapitalize="words">
+        </label>
+        <label class="field">Last Name
+          <input name="lastName" type="text" autocomplete="family-name" autocapitalize="words">
+        </label>
+      </div>
       <fieldset class="field-group">
-        <legend>Property Address</legend>
-        <label class="field">Street
-          <input name="street" type="text" autocomplete="address-line1" autocapitalize="words">
-        </label>
-        <label class="field">Suite No
-          <input name="suite" type="text" autocomplete="address-line2">
-        </label>
-        <label class="field">City
-          <input name="city" type="text" autocomplete="address-level2" autocapitalize="words">
-        </label>
-        <div class="field-row">
+        <legend>Property Address <span class="required-note">required</span></legend>
+        <div class="field-row street-row">
+          <label class="field">Street
+            <input name="street" type="text" autocomplete="address-line1" autocapitalize="words" required>
+          </label>
+          <label class="field">Suite No
+            <input name="suite" type="text" autocomplete="address-line2">
+          </label>
+        </div>
+        <div class="field-row city-row">
+          <label class="field">City
+            <input name="city" type="text" autocomplete="address-level2" autocapitalize="words" required>
+          </label>
           <label class="field">State
-            <input name="state" type="text" autocomplete="address-level1" autocapitalize="characters" maxlength="2">
+            <input name="state" type="text" autocomplete="address-level1" autocapitalize="characters" maxlength="2" required>
           </label>
           <label class="field">Zip
-            <input name="zip" type="text" autocomplete="postal-code" inputmode="numeric" maxlength="10">
+            <input name="zip" type="text" autocomplete="postal-code" inputmode="numeric" maxlength="10" required>
           </label>
         </div>
       </fieldset>
-      <label class="field">Phone
-        <input name="phone" type="tel" autocomplete="tel" inputmode="tel">
-      </label>
-      <label class="field">Email
-        <input name="email" type="email" autocomplete="email" autocapitalize="off">
-      </label>
+      <div class="field-row">
+        <label class="field">Phone
+          <input name="phone" type="tel" autocomplete="tel" inputmode="tel">
+        </label>
+        <label class="field">Email
+          <input name="email" type="email" autocomplete="email" autocapitalize="off">
+        </label>
+      </div>
       <label class="field">Notes
-        <textarea name="notes" rows="4"></textarea>
+        <textarea name="notes" rows="3"></textarea>
       </label>
     </main>
     <footer class="app-footer">
@@ -90,6 +104,10 @@
     <header class="app-header">
       <button class="back" type="button" aria-label="Back">‹</button>
       <h1 tabindex="-1">Services To Quote</h1>
+      <button class="home-btn" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7M5 10v10h5v-6h4v6h5V10"/></svg>
+        Home
+      </button>
     </header>
     <!-- Buttons are built from SERVICES in app.js (alphabetical). -->
     <main id="service-buttons" class="service-list"></main>
@@ -103,6 +121,10 @@
     <header class="app-header">
       <button class="back" type="button" aria-label="Back">‹</button>
       <h1 tabindex="-1">Window Details</h1>
+      <button class="home-btn" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7M5 10v10h5v-6h4v6h5V10"/></svg>
+        Home
+      </button>
     </header>
     <main class="questions">
       <fieldset class="question">
@@ -129,8 +151,14 @@
   <section class="screen" id="window-count" hidden>
     <header class="app-header">
       <button class="back" type="button" aria-label="Back">‹</button>
-      <h1 tabindex="-1">Window Count</h1>
-      <p class="total">Windows: <span id="total">0</span></p>
+      <div class="title-block">
+        <h1 tabindex="-1">Window Count</h1>
+        <p class="total">Windows: <span id="total">0</span></p>
+      </div>
+      <button class="home-btn" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7M5 10v10h5v-6h4v6h5V10"/></svg>
+        Home
+      </button>
     </header>
     <main id="counters" class="counters" aria-live="polite"></main>
     <footer class="app-footer">
@@ -144,6 +172,10 @@
     <header class="app-header">
       <button class="back" type="button" aria-label="Back">‹</button>
       <h1 tabindex="-1">Quote</h1>
+      <button class="home-btn" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7M5 10v10h5v-6h4v6h5V10"/></svg>
+        Home
+      </button>
     </header>
     <main>
       <article class="invoice">

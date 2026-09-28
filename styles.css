@@ -45,10 +45,37 @@ button { font: inherit; }
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 16px 0 12px;
+  padding: 12px 0 8px;
 }
 
 .app-header h1 { margin: 0; font-size: 1.5rem; flex: 1; outline: none; }
+.title-block { flex: 1; min-width: 0; }
+
+.home-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  margin-right: -4px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--brand);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.home-btn svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.home-btn:active { background: var(--brand-tint); }
 
 .back {
   width: 44px;
@@ -69,7 +96,7 @@ button { font: inherit; }
 .empty { text-align: center; padding: 24px 0; margin: 0; }
 
 /* ---------- Footer buttons ---------- */
-.app-footer { display: flex; gap: 12px; padding: 16px 0; }
+.app-footer { display: flex; gap: 12px; padding: 12px 0; }
 .app-footer:not(:has(button:not([hidden]))) { display: none; }
 
 .footer-btn {
@@ -163,13 +190,15 @@ button { font: inherit; }
 .prior-meta { font-size: 0.85rem; color: var(--muted); }
 
 /* ---------- Contact fields ---------- */
-.fields { display: flex; flex-direction: column; gap: 16px; }
+/* Compact so the whole form fits on a phone screen without scrolling. */
+.fields { display: flex; flex-direction: column; gap: 12px; }
 
 .field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
+  font-size: 0.85rem;
   font-weight: 600;
   color: var(--muted);
 }
@@ -177,32 +206,27 @@ button { font: inherit; }
 .field input,
 .field textarea {
   width: 100%;
-  padding: 14px;
+  padding: 10px 12px;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 10px;
   background: var(--card);
   color: var(--text);
   font: inherit;
   font-weight: 400;
-  font-size: 1.1rem; /* 16px+ stops iOS from zooming on focus */
+  font-size: 1rem; /* 16px+ stops iOS from zooming on focus */
   resize: vertical;
 }
 
 .field input:focus,
 .field textarea:focus { outline: 2px solid var(--brand); border-color: var(--brand); }
 
-.field-group {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin: 0;
-  padding: 14px;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-}
+.field-group { display: flex; flex-direction: column; gap: 10px; margin: 0; padding: 0; border: none; }
+.field-group legend { padding: 0; margin-bottom: 6px; font-weight: 700; color: var(--text); }
+.required-note { margin-left: 4px; font-size: 0.8rem; font-weight: 600; color: var(--muted); }
 
-.field-group legend { padding: 0 6px; font-weight: 700; color: var(--text); }
-.field-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.field-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.street-row { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+.city-row { grid-template-columns: minmax(0, 1.7fr) minmax(0, 0.8fr) minmax(0, 1fr); }
 
 /* ---------- Services To Quote ---------- */
 .service-list { display: flex; flex-direction: column; gap: 12px; }
@@ -264,7 +288,7 @@ button { font: inherit; }
 .choice input:focus-visible + span { outline: 3px solid var(--brand); outline-offset: 2px; }
 
 /* ---------- Window Count ---------- */
-.total { margin: 0; font-size: 1.1rem; color: var(--muted); }
+.total { margin: 2px 0 0; font-size: 1rem; color: var(--muted); }
 .total span { color: var(--text); font-weight: 700; }
 
 .counters { display: flex; flex-direction: column; gap: 12px; }

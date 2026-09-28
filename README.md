@@ -5,10 +5,12 @@ Mobile-first web app for window washing crews to build price quotes in the field
 ## Screens
 
 - **Main** – two large buttons: Create New Quote and View Prior Quote.
-- **Prior Quotes** – saved quotes sorted by last name, showing the address.
+- **Prior Quotes** – saved quotes sorted by last name then address (quotes
+  without a name go last).
   Tap one to open its quote.
-- **Contact** – first and last name (last name required), property address
-  (street, suite no, city, state, zip), phone, email and notes.
+- **Contact** – first and last name, property address (street, suite no,
+  city, state, zip – required except suite), phone, email and notes. Laid out
+  to fit on one phone screen without scrolling.
 - **Services To Quote** – one button per service, in alphabetical order. Tapping
   a service opens its workflow; only Windows has one so far.
 - **Window Details** – Window Service (Outside or Outside/Inside) and New
@@ -19,7 +21,7 @@ Mobile-first web app for window washing crews to build price quotes in the field
   service, total and notes. Tap a line item to change it, **Edit** to change
   contact info, **Add Service** for another service.
 
-Quotes are saved on the device (localStorage). Prices show as "TBD" until the
+Every screen has a **Home** button at the top. Quotes are saved on the device (localStorage). Prices show as "TBD" until the
 pricing rules are added in `priceFor()` in `app.js`.
 
 ## Running it

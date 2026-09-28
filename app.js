@@ -133,6 +133,7 @@ function goHome() {
 
 window.addEventListener("popstate", () => show(screenId()));
 for (const btn of document.querySelectorAll(".back")) btn.addEventListener("click", back);
+for (const btn of document.querySelectorAll(".home-btn")) btn.addEventListener("click", goHome);
 
 // ---------- Main ----------
 document.getElementById("new-quote").addEventListener("click", () => {
@@ -149,10 +150,12 @@ document.getElementById("view-prior").addEventListener("click", () => go("prior"
 const priorList = document.getElementById("prior-list");
 
 onShow.prior = () => {
+  // By last name, then first name, then address. Quotes without a name go last.
+  const compare = (x, y) => (!x - !y) || x.localeCompare(y, undefined, { sensitivity: "base" });
   const byName = (a, b) =>
-    a.contact.lastName.localeCompare(b.contact.lastName, undefined, { sensitivity: "base" }) ||
-    a.contact.firstName.localeCompare(b.contact.firstName, undefined, { sensitivity: "base" }) ||
-    oneLineAddress(a.contact).localeCompare(oneLineAddress(b.contact));
+    compare(a.contact.lastName, b.contact.lastName) ||
+    compare(a.contact.firstName, b.contact.firstName) ||
+    compare(oneLineAddress(a.contact), oneLineAddress(b.contact));
   const list = quotes.filter((q) => !isEmpty(q)).sort(byName);
 
   priorList.replaceChildren(
@@ -160,8 +163,9 @@ onShow.prior = () => {
       const c = q.contact;
       const btn = el("button", "prior-item");
       btn.type = "button";
+      const name = [c.lastName, c.firstName].filter(Boolean).join(", ");
       btn.append(
-        el("span", "prior-name", [c.lastName, c.firstName].filter(Boolean).join(", ") || "(No name)"),
+        el("span", "prior-name", name || "No name"),
         el("span", "prior-address", oneLineAddress(c) || "No address"),
         el("span", "prior-meta", `#${q.number} · ${shortDate(q.createdAt)}`)
       );
