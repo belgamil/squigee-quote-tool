@@ -1,5 +1,4 @@
 // ---------- Constants ----------
-const STORAGE_KEY = "squigee.quotes";
 const CURRENT_KEY = "squigee.currentQuoteId";
 
 // Alphabetical. `screen` is where tapping the service starts its workflow.
@@ -29,16 +28,7 @@ function unitPrice(q, service, key, d) {
 }
 
 // ---------- Saved quotes ----------
-// All quotes live in localStorage so nothing is lost on a refresh in the field.
-function loadQuotes() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    return Array.isArray(saved) ? saved : [];
-  } catch {
-    return [];
-  }
-}
-
+// Quotes are kept by Store (store.js): in the team's Google Sheet, or on this phone.
 function loadCurrentId() {
   try {
     return localStorage.getItem(CURRENT_KEY);
@@ -47,20 +37,22 @@ function loadCurrentId() {
   }
 }
 
+// Saves the quote being worked on (blank ones are skipped) and remembers which one it is.
 function saveQuotes() {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(quotes));
     localStorage.setItem(CURRENT_KEY, current ? current.id : "");
   } catch {
     // Storage unavailable (e.g. private mode) – the app still works for this session.
   }
+  if (current && !isEmpty(current)) Store.save(current);
 }
 
 function newQuote() {
   return {
     id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-    number: Math.max(1000, ...quotes.map((q) => q.number || 0)) + 1,
+    number: Store.nextNumber(), // null until the quote sheet assigns one
     createdAt: new Date().toISOString(),
+    createdBy: Store.user()?.name || "",
     contact: { firstName: "", lastName: "", street: "", suite: "", city: "", state: "", zip: "", phone: "", email: "" },
     notes: "",
     services: {}, // service name -> details, e.g. services.Windows
@@ -71,7 +63,7 @@ function isEmpty(q) {
   return !Object.values(q.contact).some(Boolean) && !q.notes && !Object.keys(q.services).length;
 }
 
-const quotes = loadQuotes();
+const quotes = Store.quotes;
 let current = quotes.find((q) => q.id === loadCurrentId()) || null;
 
 // ---------- Formatting ----------
@@ -81,6 +73,7 @@ const cityLine = (c) => [c.city, [c.state, c.zip].filter(Boolean).join(" ")].fil
 const oneLineAddress = (c) => [streetLine(c), cityLine(c)].filter(Boolean).join(", ");
 const money = (n) => n.toLocaleString("en-US", { style: "currency", currency: "USD" });
 const shortDate = (iso) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+const quoteNo = (q) => (q.number ? `#${q.number}` : "Not saved yet");
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
 function el(tag, className, text) {
@@ -111,6 +104,7 @@ function screenId(hash = location.hash) {
 
 function show(id) {
   if (NEEDS_QUOTE.includes(id) && !current) id = "home";
+  if (Store.remote && !Store.user()) id = "connect";
   for (const screen of document.querySelectorAll(".screen")) screen.hidden = screen.id !== id;
   renderContactStrip(document.querySelector(`#${id} .contact-strip`));
   onShow[id]?.();
@@ -159,14 +153,56 @@ for (const btn of document.querySelectorAll(".home-btn")) btn.addEventListener("
 
 // ---------- Main ----------
 document.getElementById("new-quote").addEventListener("click", () => {
-  // Drop abandoned quotes that never had anything entered.
-  for (let i = quotes.length - 1; i >= 0; i--) if (isEmpty(quotes[i])) quotes.splice(i, 1);
   current = newQuote();
-  quotes.push(current);
   saveQuotes();
   go("contact");
 });
 document.getElementById("view-prior").addEventListener("click", () => go("prior"));
+
+onShow.home = () => {
+  const footer = document.getElementById("home-footer");
+  footer.hidden = !Store.remote;
+  if (!Store.remote) return;
+  const { pending } = Store.status();
+  document.getElementById("home-status").textContent =
+    `Signed in as ${Store.user()?.name || "?"}.` + (pending ? ` ${plural(pending, "quote")} waiting to upload.` : "");
+};
+
+document.getElementById("switch-user").addEventListener("click", () => {
+  if (Store.status().pending && !confirm("Some quotes haven't reached the quote sheet yet. They'll upload once the next person signs in. Switch user?")) return;
+  Store.signOut();
+  show("connect");
+});
+
+// ---------- Team sign-in ----------
+const connectForm = document.getElementById("connect");
+const connectError = document.getElementById("connect-error");
+
+onShow.connect = () => {
+  connectForm.elements.userName.value = Store.user()?.name || "";
+  connectForm.elements.teamCode.value = "";
+  connectError.hidden = true;
+};
+
+connectForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const button = connectForm.querySelector("[type=submit]");
+  button.disabled = true;
+  button.textContent = "Connecting…";
+  connectError.hidden = true;
+  try {
+    await Store.connect(connectForm.elements.userName.value.trim(), connectForm.elements.teamCode.value.trim());
+    history.replaceState({ depth: 0 }, "", "#home");
+    show("home");
+    Store.refresh(current);
+  } catch (err) {
+    connectError.textContent = err.message;
+    connectError.hidden = false;
+  } finally {
+    button.disabled = false;
+    button.textContent = "Connect";
+  }
+});
 
 // ---------- Prior quotes ----------
 const priorList = document.getElementById("prior-list");
@@ -180,9 +216,14 @@ function matchesSearch(q, text) {
   return text.toLowerCase().split(/\s+/).filter(Boolean).every((word) => haystack.includes(word));
 }
 
-priorSearch.addEventListener("input", () => onShow.prior());
+priorSearch.addEventListener("input", () => renderPrior());
 
 onShow.prior = () => {
+  renderPrior();
+  Store.refresh(current);
+};
+
+function renderPrior() {
   // By last name, then first name, then address. Quotes without a name go last.
   const compare = (x, y) => (!x - !y) || x.localeCompare(y, undefined, { sensitivity: "base" });
   const byName = (a, b) =>
@@ -201,7 +242,7 @@ onShow.prior = () => {
       btn.append(
         el("span", "prior-name", name || "No name"),
         el("span", "prior-address", oneLineAddress(c) || "No address"),
-        el("span", "prior-meta", `#${q.number} · ${shortDate(q.createdAt)}`)
+        el("span", "prior-meta", [quoteNo(q), shortDate(q.createdAt), q.createdBy].filter(Boolean).join(" · "))
       );
       btn.addEventListener("click", () => {
         current = q;
@@ -211,7 +252,7 @@ onShow.prior = () => {
 
       const del = el("button", "prior-delete");
       del.type = "button";
-      del.setAttribute("aria-label", `Delete quote #${q.number}`);
+      del.setAttribute("aria-label", `Delete quote ${quoteNo(q)}`);
       del.innerHTML = TRASH_ICON;
       del.addEventListener("click", () => deleteQuote(q));
 
@@ -220,7 +261,16 @@ onShow.prior = () => {
       return li;
     })
   );
-  priorEmpty.textContent = saved.length ? "No quotes match your search." : "No saved quotes yet.";
+  const status = Store.status();
+  const priorStatus = document.getElementById("prior-status");
+  priorStatus.hidden = !Store.remote || !(status.loading || status.error || status.pending);
+  priorStatus.classList.toggle("warn", !!status.error);
+  priorStatus.textContent = status.loading
+    ? "Loading quotes from the quote sheet…"
+    : status.error
+      ? `${status.error}${status.pending ? ` ${plural(status.pending, "quote")} waiting to upload.` : ""}`
+      : `${plural(status.pending, "quote")} waiting to upload.`;
+  priorEmpty.textContent = saved.length ? "No quotes match your search." : status.loading ? "" : "No saved quotes yet.";
   priorEmpty.hidden = list.length > 0;
   priorSearch.hidden = !saved.length;
   document.getElementById("export-quotes").hidden = !saved.length;
@@ -229,13 +279,20 @@ onShow.prior = () => {
 const TRASH_ICON =
   '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 13h12l1-13M9 7V4h6v3"/></svg>';
 
-function deleteQuote(q) {
-  const who = fullName(q.contact) || q.contact.street || `quote #${q.number}`;
+async function deleteQuote(q) {
+  const who = fullName(q.contact) || q.contact.street || `quote ${quoteNo(q)}`;
   if (!confirm(`Delete the quote for ${who}? This can't be undone.`)) return;
-  quotes.splice(quotes.indexOf(q), 1);
-  if (current === q) current = null;
-  saveQuotes();
-  onShow.prior();
+  try {
+    await Store.remove(q);
+  } catch (err) {
+    alert(`Couldn't delete the quote: ${err.message}`);
+    return;
+  }
+  if (current === q) {
+    current = null;
+    saveQuotes();
+  }
+  renderPrior();
 }
 
 // ---------- Export ----------
@@ -488,7 +545,7 @@ function renderInvoice(q) {
   const estimate = el("div", "inv-estimate");
   const estTitle = el("div", "inv-estimate-title");
   estTitle.append(el("strong", null, "FREE ESTIMATE"), el("span", null, COMPANY.validFor));
-  estimate.append(estTitle, infoRows("inv-lines", [["Date Emailed:", usDate(q.createdAt)], ["Sent By:", ""]]));
+  estimate.append(estTitle, infoRows("inv-lines", [["Date Emailed:", usDate(q.createdAt)], ["Sent By:", q.createdBy || ""]]));
 
   const top = el("div", "inv-top");
   top.append(brand, estimate);
@@ -518,7 +575,7 @@ function renderInvoice(q) {
     );
 
     const sched = el("div", "inv-sched");
-    for (const [label, value] of [["Scheduled For:", ""], ["Quoted By:", ""], ["Quote Date:", usDate(q.createdAt)]]) {
+    for (const [label, value] of [["Scheduled For:", ""], ["Quoted By:", q.createdBy || ""], ["Quote Date:", usDate(q.createdAt)]]) {
       const cell = el("span");
       cell.append(el("strong", null, label), ` ${value}`);
       sched.append(cell);
@@ -590,9 +647,28 @@ function renderPriceStatus() {
       : "Loading prices…";
 }
 
+// Whether this quote has reached the quote sheet. It needs its number before it can be sent.
+function renderSyncStatus() {
+  const line = document.getElementById("sync-status");
+  const send = document.getElementById("send-quote");
+  line.hidden = !Store.remote;
+  send.disabled = Store.remote && !current.number;
+  if (!Store.remote) return;
+  const waiting = Store.isPending(current) || !current.number;
+  const { error } = Store.status();
+  line.classList.toggle("warn", waiting && !!error);
+  line.textContent = !waiting
+    ? `Saved to the quote sheet as ${quoteNo(current)}.`
+    : error
+      ? `Not saved to the quote sheet yet: ${error} It will keep trying.`
+      : "Saving to the quote sheet…";
+}
+
 onShow.quote = () => {
   renderInvoice(current);
   renderPriceStatus();
+  renderSyncStatus();
+  if (Store.remote && Store.isPending(current)) Store.flush(current).catch(() => renderSyncStatus());
   document.getElementById("crew-notes-text").textContent = current.notes;
   document.getElementById("crew-notes").hidden = !current.notes.trim();
 };
@@ -663,7 +739,7 @@ function quotePdf(q) {
     doc.text("FREE ESTIMATE", (bx + R) / 2, 47, { align: "center" });
     font(8.5, true);
     doc.text(COMPANY.validFor, (bx + R) / 2, 63, { align: "center" });
-    for (const [label, value, y] of [["Date Emailed:", usDate(q.createdAt), 93], ["Sent By:", "", 110]]) {
+    for (const [label, value, y] of [["Date Emailed:", usDate(q.createdAt), 93], ["Sent By:", q.createdBy || "", 110]]) {
       font(7.5, true);
       doc.text(label, bx + 6, y);
       font(8.5);
@@ -746,6 +822,9 @@ function quotePdf(q) {
     font(9, true);
     doc.text("Scheduled For:", L + 7, y + 14);
     doc.text("Quoted By:", L + 220, y + 14);
+    font(8.5);
+    doc.text(q.createdBy || "", L + 275, y + 14);
+    font(9, true);
     doc.text("Quote Date:", L + 405, y + 14);
     font(8.5);
     doc.text(usDate(q.createdAt), L + 462, y + 14);
@@ -849,6 +928,7 @@ async function shareOrDownload(file, { title, text } = {}) {
 async function sendQuote() {
   if (!window.jspdf) return alert("The PDF tool is still loading. Try again in a moment.");
   const q = current;
+  if (!q.number) return alert("This quote is still being saved to the quote sheet. Try again once it has a quote number.");
   // Freeze the prices on this quote so later price-sheet edits don't change it.
   q.sentPrices = { ...q.sentPrices };
   for (const sec of quoteSections(q)) {
@@ -885,6 +965,39 @@ Prices.onChange(() => {
 Prices.refresh();
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") Prices.refresh();
+});
+
+// ---------- Quote sheet ----------
+Store.onChange(() => {
+  // After a refresh, reopen the quote this phone was working on.
+  if (!current) {
+    const id = loadCurrentId();
+    const found = id && quotes.find((q) => q.id === id);
+    if (found) {
+      current = found;
+      if (NEEDS_QUOTE.includes(location.hash.slice(1))) show(screenId());
+    }
+  }
+  if (Store.status().auth) {
+    Store.signOut();
+    show("connect");
+    connectError.textContent = "The team code has changed. Enter the new code.";
+    connectError.hidden = false;
+    return;
+  }
+  const visible = document.querySelector(".screen:not([hidden])")?.id;
+  if (visible === "prior") renderPrior();
+  if (visible === "quote") renderSyncStatus();
+  if (visible === "home") onShow.home();
+});
+Store.refresh(current);
+window.addEventListener("online", () => Store.refresh(current));
+// Keep retrying quotes that haven't reached the sheet (e.g. saved in a dead zone).
+setInterval(() => {
+  if (Store.status().pending && !Store.status().loading) Store.refresh(current);
+}, 30000);
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden" && current && Store.isPending(current)) Store.flush(current).catch(() => {});
 });
 
 // ---------- Start ----------

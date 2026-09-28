@@ -8,6 +8,26 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <!-- Team sign-in: only when quotes are kept in the team's Google Sheet -->
+  <form class="screen" id="connect" hidden>
+    <header class="app-header">
+      <h1 tabindex="-1">Squeegee Squad Quote</h1>
+    </header>
+    <main class="fields">
+      <p class="hint">Quotes are saved to the team's quote sheet, not this phone. Enter your name and the team code once to get started.</p>
+      <label class="field">Your Name
+        <input name="userName" type="text" autocomplete="name" autocapitalize="words" required>
+      </label>
+      <label class="field">Team Code
+        <input name="teamCode" type="password" autocomplete="off" autocapitalize="off" required>
+      </label>
+      <p id="connect-error" class="form-error" role="alert" hidden></p>
+    </main>
+    <footer class="app-footer">
+      <button class="footer-btn primary" type="submit">Connect</button>
+    </footer>
+  </form>
+
   <!-- Main -->
   <section class="screen" id="home" hidden>
     <header class="app-header">
@@ -23,6 +43,10 @@
         View Prior Quote
       </button>
     </main>
+    <footer id="home-footer" class="home-footer" hidden>
+      <p id="home-status"></p>
+      <button id="switch-user" class="link-btn" type="button">Switch user</button>
+    </footer>
   </section>
 
   <!-- Prior quotes -->
@@ -36,6 +60,7 @@
       </button>
     </header>
     <main>
+      <p id="prior-status" class="price-status" hidden></p>
       <input id="prior-search" class="search" type="search" placeholder="Search name or address" aria-label="Search name or address" autocomplete="off">
       <ul id="prior-list" class="prior-list"></ul>
       <p id="prior-empty" class="empty" hidden></p>
@@ -197,6 +222,7 @@
     <main>
       <!-- Built by renderInvoice() in app.js; laid out like the company's paper quote. -->
       <article id="invoice" class="invoice"></article>
+      <p id="sync-status" class="price-status" hidden></p>
       <p id="price-status" class="price-status"></p>
       <div id="crew-notes" class="crew-notes" hidden>
         <p class="crew-notes-label">Notes <span>(not included when the quote is sent)</span></p>
@@ -223,6 +249,7 @@
   <script src="vendor/jspdf.umd.min.js" defer></script>
   <script src="company.js"></script>
   <script src="prices.js"></script>
+  <script src="store.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

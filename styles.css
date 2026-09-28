@@ -146,7 +146,7 @@ button { font: inherit; }
 .outline:active { background: var(--brand-tint); }
 .primary { border: none; background: var(--brand); color: #fff; }
 .primary:active { background: var(--brand-dark); }
-.primary:disabled { opacity: 0.4; cursor: not-allowed; }
+.primary:disabled, .outline:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .link-btn {
   border: none;
@@ -515,6 +515,10 @@ button { font: inherit; }
 .inv-terms li + li { margin-top: 6px; }
 
 .inv-office { text-align: center; font-size: 0.7rem; color: #555; }
+
+.home-footer { display: flex; flex-wrap: wrap; gap: 4px 12px; justify-content: center; align-items: center; padding: 12px 0; color: var(--muted); text-align: center; }
+.home-footer p { margin: 0; }
+.form-error { margin: 0; padding: 10px 12px; border-radius: 10px; background: #fdecea; color: #b3261e; font-weight: 600; }
 
 .price-status { margin: 8px 2px 0; font-size: 0.8rem; color: var(--muted); }
 .price-status.warn { color: #9a5b00; font-weight: 600; }

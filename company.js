@@ -26,6 +26,12 @@ const COMPANY = {
     tabs: { Windows: "0" },
   },
 
+  // Google Apps Script web app that stores quotes in the team's Google Sheet
+  // (see apps-script/Code.gs). Leave empty to keep quotes on each phone instead.
+  quoteStore: {
+    url: "",
+  },
+
   // Applied to every quote's subtotal. 0.1 = 10%.
   discountRate: 0,
   taxRate: 0,

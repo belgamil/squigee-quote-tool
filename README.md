@@ -33,9 +33,8 @@ Mobile-first web app for window washing crews to build price quotes in the field
 Every screen after Contact shows the customer's name and street under the
 header; tap it to edit the contact info.
 
-Every screen has a **Home** button at the top. Quotes are saved on the device only (browser localStorage) – each phone has
-its own quotes, and they are lost if the browser's website data is cleared.
-Use Export All Quotes to keep a copy.
+Every screen has a **Home** button at the top. Quotes are stored by `store.js`: in the team's Google Sheet once
+`COMPANY.quoteStore.url` is set (see below), otherwise on each phone.
 
 ## Prices
 
@@ -62,6 +61,39 @@ address, logo, thank-you note, terms, discount and tax rates) live in
 
 PDFs are made with [jsPDF](https://github.com/parallax/jsPDF) 2.5.1 (MIT),
 kept in `vendor/` so it works with poor signal.
+
+## Quote sheet (shared storage for the team)
+
+With the quote sheet set up, every phone saves quotes to one private Google
+Sheet and Prior Quotes shows the whole team's quotes. Nothing about customers
+is kept on the phone: a quote is held there only until the sheet confirms it's
+saved (so a dead zone doesn't lose work), then removed. Quote numbers are
+handed out by the sheet, so phones can't clash.
+
+Each person enters their name and the team code once per phone. The name fills
+in **Sent By** / **Quoted By** on their quotes.
+
+### Setup (about 5 minutes, done once by the sheet owner)
+
+1. Create a new Google Sheet, e.g. "Squeegee Squad Quotes". Keep it private
+   (don't share it) – the script below reads and writes it for the app.
+2. In the sheet: **Extensions → Apps Script**. Delete the sample code, paste
+   in all of `apps-script/Code.gs`, and click **Save**.
+3. Click **Project Settings** (gear icon) → **Script properties** → **Add
+   script property**: name `TEAM_CODE`, value a code of your choosing (use
+   something long, like 3–4 random words). Save.
+4. Click **Deploy → New deployment**. Type: **Web app**. Execute as: **Me**.
+   Who has access: **Anyone**. Click **Deploy**, allow the permissions Google
+   asks for, and copy the **Web app URL**.
+5. Put that URL in `company.js` under `quoteStore.url`.
+6. Give the team code to the crew. On each phone, open the app and sign in.
+
+"Anyone" means anyone can *reach* the script, but it refuses every request
+without the team code. To lock someone out (e.g. a lost phone), change
+`TEAM_CODE` – every phone will ask for the new code.
+
+After editing `Code.gs`, use **Deploy → Manage deployments → Edit → New
+version** so the URL stays the same.
 
 ## Running it
 
