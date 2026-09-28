@@ -4,7 +4,7 @@ Mobile-first web app for window washing crews to build price quotes in the field
 
 ## Screens
 
-- **Main** (Squeege Squad Quote) – two large buttons: Create New Quote and View Prior Quote.
+- **Main** (Squeegee Squad Quote) – two large buttons: Create New Quote and View Prior Quote.
 - **Prior Quotes** – saved quotes sorted by last name then address (quotes
   without a name go last), with a search box for name or address.
   Tap one to open its quote.
