@@ -99,7 +99,9 @@ without the team code. To lock someone out (e.g. a lost phone), change
 `TEAM_CODE` – every phone will ask for the new code.
 
 After editing `Code.gs`, use **Deploy → Manage deployments → Edit (pencil) →
-Version: New version → Deploy** so the URL stays the same. New columns are added
+Version: New version → Deploy** so the URL stays the same. To confirm which code is
+live, open the web app URL in a browser: it shows the script version
+(`SCRIPT_VERSION` in `Code.gs`). New columns are added
 to the Quotes tab automatically, in their place, without disturbing existing rows.
 
 The **Total** column is the quote's dollar total as priced in the app ("TBD" while

@@ -9,6 +9,10 @@
  * owner's Google account; the script runs as the owner.
  */
 
+// Shown when the web app's URL is opened in a browser, to confirm which code is live.
+// Bump it whenever this file changes.
+const SCRIPT_VERSION = "2 (adds the Total column)";
+
 const SHEET_NAME = "Quotes";
 const FIRST_NUMBER = 1001;
 
@@ -25,7 +29,7 @@ const TOTAL_COL = HEADERS.indexOf("Total");
 const DATA_COL = HEADERS.length - 1;
 
 function doGet() {
-  return ContentService.createTextOutput("Squeegee Squad quote sheet is running.");
+  return ContentService.createTextOutput(`Squeegee Squad quote sheet is running – script version ${SCRIPT_VERSION}.`);
 }
 
 function doPost(e) {
