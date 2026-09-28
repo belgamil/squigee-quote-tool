@@ -245,8 +245,14 @@ function startService(service) {
 
 // ---------- Windows workflow (Window Details + Window Count) ----------
 // Edits happen on a draft so backing out doesn't change the quote until "Add to Quote".
+// The Window Details questions; all must be answered before Next.
+const WINDOW_QUESTIONS = ["windowService", "windowCondition", "cleaningDifficulty"];
+
 function emptyWindows() {
-  return { windowService: "", newConstruction: "", counts: Object.fromEntries(SIZES.map((s) => [s, 0])) };
+  return {
+    ...Object.fromEntries(WINDOW_QUESTIONS.map((q) => [q, ""])),
+    counts: Object.fromEntries(SIZES.map((s) => [s, 0])),
+  };
 }
 
 function beginWindows() {
@@ -268,12 +274,11 @@ onShow["window-details"] = () => {
   for (const radio of detailsForm.querySelectorAll("input[type=radio]")) {
     radio.checked = draft()[radio.name] === radio.value;
   }
-  detailsNext.disabled = !draft().windowService || !draft().newConstruction;
+  detailsNext.disabled = !WINDOW_QUESTIONS.every((q) => draft()[q]);
 };
 detailsForm.addEventListener("change", () => {
-  draft().windowService = detailsForm.elements.windowService.value;
-  draft().newConstruction = detailsForm.elements.newConstruction.value;
-  detailsNext.disabled = !draft().windowService || !draft().newConstruction;
+  for (const q of WINDOW_QUESTIONS) draft()[q] = detailsForm.elements[q].value;
+  detailsNext.disabled = !WINDOW_QUESTIONS.every((q) => draft()[q]);
   saveQuotes();
 });
 detailsForm.addEventListener("submit", (e) => {
@@ -342,7 +347,8 @@ function describe(service, d) {
   const windowCount = sizes.reduce((sum, s) => sum + d.counts[s], 0);
   return [
     d.windowService,
-    d.newConstruction === "Yes" ? "New construction" : "Not new construction",
+    d.windowCondition && `Condition: ${d.windowCondition}`,
+    d.cleaningDifficulty && `Difficulty: ${d.cleaningDifficulty}`,
     windowCount ? `${plural(windowCount, "window")}: ${sizes.map((s) => `${s} ${d.counts[s]}`).join(" · ")}` : "No windows",
     d.counts.Screen && plural(d.counts.Screen, "screen"),
     d.counts.Skylight && plural(d.counts.Skylight, "skylight"),

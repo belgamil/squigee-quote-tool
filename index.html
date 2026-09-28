@@ -4,14 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b6fb8">
-  <title>Squigee Squad Quote</title>
+  <title>Squeege Squad Quote</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <!-- Main -->
   <section class="screen" id="home" hidden>
     <header class="app-header">
-      <h1 tabindex="-1">Squigee Squad Quote</h1>
+      <h1 tabindex="-1">Squeege Squad Quote</h1>
     </header>
     <main class="home-grid">
       <button id="new-quote" class="tile tile-primary" type="button">
@@ -136,10 +136,19 @@
         </div>
       </fieldset>
       <fieldset class="question">
-        <legend>New Construction</legend>
+        <legend>Window Condition</legend>
         <div class="segmented">
-          <label class="choice"><input type="radio" name="newConstruction" value="Yes"><span>Yes</span></label>
-          <label class="choice"><input type="radio" name="newConstruction" value="No"><span>No</span></label>
+          <label class="choice"><input type="radio" name="windowCondition" value="New Construction"><span>New Construction</span></label>
+          <label class="choice"><input type="radio" name="windowCondition" value="Heavy"><span>Heavy</span></label>
+          <label class="choice"><input type="radio" name="windowCondition" value="Lite"><span>Lite</span></label>
+        </div>
+      </fieldset>
+      <fieldset class="question">
+        <legend>Cleaning Difficulty</legend>
+        <div class="segmented">
+          <label class="choice"><input type="radio" name="cleaningDifficulty" value="Standard"><span>Standard</span></label>
+          <label class="choice"><input type="radio" name="cleaningDifficulty" value="High"><span>High</span></label>
+          <label class="choice"><input type="radio" name="cleaningDifficulty" value="Extreme"><span>Extreme</span></label>
         </div>
       </fieldset>
     </main>

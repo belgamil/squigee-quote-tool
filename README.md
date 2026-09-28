@@ -4,7 +4,7 @@ Mobile-first web app for window washing crews to build price quotes in the field
 
 ## Screens
 
-- **Main** (Squigee Squad Quote) – two large buttons: Create New Quote and View Prior Quote.
+- **Main** (Squeege Squad Quote) – two large buttons: Create New Quote and View Prior Quote.
 - **Prior Quotes** – saved quotes sorted by last name then address (quotes
   without a name go last), with a search box for name or address.
   Tap one to open its quote.
@@ -13,8 +13,9 @@ Mobile-first web app for window washing crews to build price quotes in the field
   to fit on one phone screen without scrolling.
 - **Services To Quote** – one button per service, in alphabetical order. Tapping
   a service opens its workflow; only Windows has one so far.
-- **Window Details** – Window Service (Outside or Outside/Inside) and New
-  Construction (Yes or No).
+- **Window Details** – Window Service (Outside or Outside/Inside), Window
+  Condition (New Construction, Heavy, Lite) and Cleaning Difficulty (Standard,
+  High, Extreme).
 - **Window Count** – XS–XL windows plus Screen and Skylight counters.
   **Add to Quote** puts the windows on the quote.
 - **Quote** – invoice-style view: contact info at the top, one line item per
