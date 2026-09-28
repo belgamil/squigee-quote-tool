@@ -31,8 +31,26 @@ Mobile-first web app for window washing crews to build price quotes in the field
 Every screen after Contact shows the customer's name and street under the
 header; tap it to edit the contact info.
 
-Every screen has a **Home** button at the top. Quotes are saved on the device (localStorage). Prices show as "TBD" until the
-pricing rules are added in `unitPrice()` in `app.js`.
+Every screen has a **Home** button at the top. Quotes are saved on the device (localStorage).
+
+## Prices
+
+Unit prices come from the Google Sheet set in `company.js` (`priceSheet`). The
+sheet must be shared as "Anyone with the link: Viewer". The app reads it each
+time it opens (and when it comes back to the foreground) and keeps the last
+prices on the phone, so quoting works without signal. Edits to the sheet show
+up the next time the app opens.
+
+Each service has its own tab (`priceSheet.tabs` maps service name to the tab's
+`gid`). Columns are found by their header, so they can be in any order:
+
+| Service | Windows | Dirty | Size | Price |
+|---|---|---|---|---|
+| Windows | Outside or Outside/Inside | New Construction, Lite or Heavy | XS, Small, Medium, Large, XL, Screen, Skylight | $2.00 |
+
+A line item shows "TBD" (and so does the total) when no row matches it. When a
+quote is sent its prices are frozen, so later sheet edits don't change quotes
+already sent.
 
 Company details on the quote (name, phone, website, legal name, office
 address, logo, thank-you note, terms, discount and tax rates) live in

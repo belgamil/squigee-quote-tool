@@ -497,6 +497,9 @@ button { font: inherit; }
 
 .inv-office { text-align: center; font-size: 0.7rem; color: #555; }
 
+.price-status { margin: 8px 2px 0; font-size: 0.8rem; color: var(--muted); }
+.price-status.warn { color: #9a5b00; font-weight: 600; }
+
 .crew-notes {
   margin-top: 12px;
   padding: 10px 12px;

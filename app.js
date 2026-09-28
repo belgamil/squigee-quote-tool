@@ -17,10 +17,15 @@ const SIZES = [...WINDOW_SIZES, ...EXTRAS];
 
 // ---------- Pricing ----------
 // Unit price in dollars for one line item (e.g. key "M" = medium windows), or
-// null when it can't be priced yet. `details` has the Window Details answers.
-// TODO: fill in once the pricing rules are known.
-function unitPrice(service, key, details) {
-  return null;
+// null when the price sheet has no matching row. Prices are frozen on a quote
+// when it's sent, so later price-sheet edits don't change quotes already sent.
+function priceKey(service, key, d) {
+  return Prices.key(service, d.windowService, d.windowCondition, key);
+}
+
+function unitPrice(q, service, key, d) {
+  const frozen = q.sentPrices?.[priceKey(service, key, d)];
+  return frozen ?? Prices.lookup(service, d.windowService, d.windowCondition, key);
 }
 
 // ---------- Saved quotes ----------
@@ -366,7 +371,7 @@ const amount = (n) => (n == null ? "TBD" : money(n));
 const percent = (rate) => `${+(rate * 100).toFixed(2)}%`;
 
 // Line items for one service: { key, qty, description, unitPrice }.
-function lineItems(service, d) {
+function lineItems(q, service, d) {
   if (service !== "Windows") return [];
   const side = d.windowService === "Outside" ? "Out" : "In/Out";
   return [
@@ -375,7 +380,7 @@ function lineItems(service, d) {
     { key: "Skylight", qty: d.counts.Skylight, description: `Skylights ${side}` },
   ]
     .filter((item) => item.qty)
-    .map((item) => ({ ...item, unitPrice: unitPrice(service, item.key, d) }));
+    .map((item) => ({ ...item, unitPrice: unitPrice(q, service, item.key, d) }));
 }
 
 function jobDescription(service, d) {
@@ -395,7 +400,7 @@ function jobDescription(service, d) {
 function quoteSections(q) {
   return SERVICES.filter((s) => q.services[s.name]).map((service) => {
     const d = q.services[service.name];
-    const items = lineItems(service.name, d);
+    const items = lineItems(q, service.name, d);
     const priced = items.length > 0 && items.every((i) => i.unitPrice != null);
     const gross = priced ? items.reduce((sum, i) => sum + i.qty * i.unitPrice, 0) : null;
     const discount = priced ? gross * COMPANY.discountRate : null;
@@ -522,8 +527,21 @@ function renderInvoice(q) {
   invoice.replaceChildren(top, el("p", "inv-intro", COMPANY.intro), customer, ...sections, terms, office);
 }
 
+function renderPriceStatus() {
+  const { loadedAt, error, count } = Prices.status();
+  const when = loadedAt ? new Date(loadedAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "";
+  const el_ = document.getElementById("price-status");
+  el_.classList.toggle("warn", !!error || !count);
+  el_.textContent = error
+    ? `${error}${when ? ` Prices from ${when}.` : ""}`
+    : count
+      ? `Prices from the price sheet, updated ${when}. Items showing TBD have no matching row in the sheet.`
+      : "Loading prices…";
+}
+
 onShow.quote = () => {
   renderInvoice(current);
+  renderPriceStatus();
   document.getElementById("crew-notes-text").textContent = current.notes;
   document.getElementById("crew-notes").hidden = !current.notes.trim();
 };
@@ -760,6 +778,14 @@ function pdfName(q) {
 async function sendQuote() {
   if (!window.jspdf) return alert("The PDF tool is still loading. Try again in a moment.");
   const q = current;
+  // Freeze the prices on this quote so later price-sheet edits don't change it.
+  q.sentPrices = { ...q.sentPrices };
+  for (const sec of quoteSections(q)) {
+    for (const item of sec.items) {
+      if (item.unitPrice != null) q.sentPrices[priceKey(sec.service.name, item.key, q.services[sec.service.name])] = item.unitPrice;
+    }
+  }
+  saveQuotes();
   const file = new File([quotePdf(q)], pdfName(q), { type: "application/pdf" });
   const where = oneLineAddress(q.contact);
   const subject = `Quote #${q.number}${where ? " – " + where : ""}`;
@@ -793,6 +819,16 @@ async function sendQuote() {
 document.getElementById("send-quote").addEventListener("click", sendQuote);
 
 document.getElementById("quote-done").addEventListener("click", goHome);
+
+// ---------- Prices ----------
+// Load the price sheet when the app opens and whenever it comes back to the foreground.
+Prices.onChange(() => {
+  if (!document.getElementById("quote").hidden) onShow.quote();
+});
+Prices.refresh();
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") Prices.refresh();
+});
 
 // ---------- Start ----------
 // Keep Home as the first history entry; reopen the saved screen on top of it after a refresh.
