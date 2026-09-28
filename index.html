@@ -4,14 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b6fb8">
-  <title>Squigee Quote</title>
+  <title>Squigee Squad Quote</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <!-- Main -->
   <section class="screen" id="home" hidden>
     <header class="app-header">
-      <h1 tabindex="-1">Squigee Quote</h1>
+      <h1 tabindex="-1">Squigee Squad Quote</h1>
     </header>
     <main class="home-grid">
       <button id="new-quote" class="tile tile-primary" type="button">
@@ -36,8 +36,9 @@
       </button>
     </header>
     <main>
+      <input id="prior-search" class="search" type="search" placeholder="Search name or address" aria-label="Search name or address" autocomplete="off">
       <ul id="prior-list" class="prior-list"></ul>
-      <p id="prior-empty" class="empty" hidden>No saved quotes yet.</p>
+      <p id="prior-empty" class="empty" hidden></p>
     </main>
   </section>
 
@@ -61,10 +62,10 @@
         </label>
       </div>
       <fieldset class="field-group">
-        <legend>Property Address <span class="required-note">required</span></legend>
+        <legend>Property Address</legend>
         <div class="field-row street-row">
           <label class="field">Street
-            <input name="street" type="text" autocomplete="address-line1" autocapitalize="words" required>
+            <input name="street" type="text" autocomplete="address-line1" autocapitalize="words">
           </label>
           <label class="field">Suite No
             <input name="suite" type="text" autocomplete="address-line2">
@@ -72,13 +73,13 @@
         </div>
         <div class="field-row city-row">
           <label class="field">City
-            <input name="city" type="text" autocomplete="address-level2" autocapitalize="words" required>
+            <input name="city" type="text" autocomplete="address-level2" autocapitalize="words">
           </label>
           <label class="field">State
-            <input name="state" type="text" autocomplete="address-level1" autocapitalize="characters" maxlength="2" required>
+            <input name="state" type="text" autocomplete="address-level1" autocapitalize="characters" maxlength="2">
           </label>
           <label class="field">Zip
-            <input name="zip" type="text" autocomplete="postal-code" inputmode="numeric" maxlength="10" required>
+            <input name="zip" type="text" autocomplete="postal-code" inputmode="numeric" maxlength="10">
           </label>
         </div>
       </fieldset>
@@ -203,7 +204,7 @@
       </article>
     </main>
     <footer class="app-footer">
-      <button id="add-service" class="footer-btn secondary" type="button">Add Service</button>
+      <button id="edit-services" class="footer-btn secondary" type="button">Edit Services</button>
       <button id="quote-done" class="footer-btn primary" type="button">Done</button>
     </footer>
   </section>

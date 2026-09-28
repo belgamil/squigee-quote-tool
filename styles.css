@@ -169,6 +169,20 @@ button { font: inherit; }
 .tile-primary:active { background: var(--brand-dark); }
 
 /* ---------- Prior quotes ---------- */
+.search {
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  font-size: 1rem; /* 16px+ stops iOS from zooming on focus */
+}
+
+.search:focus { outline: 2px solid var(--brand); border-color: var(--brand); }
+
 .prior-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 
 .prior-item {
@@ -222,7 +236,6 @@ button { font: inherit; }
 
 .field-group { display: flex; flex-direction: column; gap: 10px; margin: 0; padding: 0; border: none; }
 .field-group legend { padding: 0; margin-bottom: 6px; font-weight: 700; color: var(--text); }
-.required-note { margin-left: 4px; font-size: 0.8rem; font-weight: 600; color: var(--muted); }
 
 .field-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .street-row { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }

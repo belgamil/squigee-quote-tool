@@ -148,6 +148,17 @@ document.getElementById("view-prior").addEventListener("click", () => go("prior"
 
 // ---------- Prior quotes ----------
 const priorList = document.getElementById("prior-list");
+const priorSearch = document.getElementById("prior-search");
+const priorEmpty = document.getElementById("prior-empty");
+
+// Every word typed must appear somewhere in the name or address.
+function matchesSearch(q, text) {
+  const c = q.contact;
+  const haystack = `${fullName(c)} ${oneLineAddress(c)}`.toLowerCase();
+  return text.toLowerCase().split(/\s+/).filter(Boolean).every((word) => haystack.includes(word));
+}
+
+priorSearch.addEventListener("input", () => onShow.prior());
 
 onShow.prior = () => {
   // By last name, then first name, then address. Quotes without a name go last.
@@ -156,7 +167,8 @@ onShow.prior = () => {
     compare(a.contact.lastName, b.contact.lastName) ||
     compare(a.contact.firstName, b.contact.firstName) ||
     compare(oneLineAddress(a.contact), oneLineAddress(b.contact));
-  const list = quotes.filter((q) => !isEmpty(q)).sort(byName);
+  const saved = quotes.filter((q) => !isEmpty(q));
+  const list = saved.filter((q) => matchesSearch(q, priorSearch.value)).sort(byName);
 
   priorList.replaceChildren(
     ...list.map((q) => {
@@ -179,7 +191,9 @@ onShow.prior = () => {
       return li;
     })
   );
-  document.getElementById("prior-empty").hidden = list.length > 0;
+  priorEmpty.textContent = saved.length ? "No quotes match your search." : "No saved quotes yet.";
+  priorEmpty.hidden = list.length > 0;
+  priorSearch.hidden = !saved.length;
 };
 
 // ---------- 1. Contact ----------
@@ -371,7 +385,7 @@ onShow.quote = () => {
 };
 
 document.getElementById("edit-contact").addEventListener("click", () => go("contact"));
-document.getElementById("add-service").addEventListener("click", () => go("services"));
+document.getElementById("edit-services").addEventListener("click", () => go("services"));
 document.getElementById("quote-done").addEventListener("click", goHome);
 
 // ---------- Start ----------
